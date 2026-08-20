@@ -18,7 +18,7 @@ This implementation covers:
 
 - Node.js 18+ and npm
 - PostgreSQL database
-- Redis (for Phase 4 - BullMQ background jobs)
+- Redis (BullMQ background jobs)
 
 ## Setup Instructions
 
