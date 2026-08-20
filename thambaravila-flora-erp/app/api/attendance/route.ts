@@ -128,7 +128,13 @@ export async function GET(req: Request) {
     });
 
     // ── Group sessions by date (YYYY-MM-DD) per user ─────────────────────────
-    type DayEntry = { date: string; sessions: typeof sessions };
+    type DayData = {
+      totalMinutes: number;
+      mainMinutes: number;
+      wfhMinutes: number;
+      sessions: typeof sessions;
+    };
+
     const byUser: Record<string, {
       userId: string;
       userName: string;
@@ -141,12 +147,17 @@ export async function GET(req: Request) {
       onSiteMinutes: number;
       daysPresent: Set<string>;
       verifiedCount: number;
-      dailyMinutes: Record<string, number>;
+      dailyStats: Record<string, DayData>;
       lateCount: number;
     }> = {};
 
     for (const s of sessions) {
       const isSessionWfh = Boolean(s.isWfh || s.workMode === 'WFH' || s.geofence?.zoneType === 'WFH');
+      const isSessionMain = Boolean(
+        s.geofence?.isMain ||
+        s.geofence?.zoneType === 'MAIN' ||
+        (!isSessionWfh && (s.locationVerified || s.geofence != null))
+      );
 
       if (!byUser[s.userId]) {
         const user = allUsers.find((u) => u.id === s.userId);
@@ -162,7 +173,7 @@ export async function GET(req: Request) {
           onSiteMinutes: 0,
           daysPresent: new Set(),
           verifiedCount: 0,
-          dailyMinutes: {},
+          dailyStats: {},
           lateCount: 0,
         };
       }
@@ -181,7 +192,23 @@ export async function GET(req: Request) {
 
       const dateKey = new Date(s.startTime).toISOString().slice(0, 10);
       rec.daysPresent.add(dateKey);
-      rec.dailyMinutes[dateKey] = (rec.dailyMinutes[dateKey] || 0) + dur;
+
+      if (!rec.dailyStats[dateKey]) {
+        rec.dailyStats[dateKey] = {
+          totalMinutes: 0,
+          mainMinutes: 0,
+          wfhMinutes: 0,
+          sessions: [],
+        };
+      }
+      rec.dailyStats[dateKey].totalMinutes += dur;
+      rec.dailyStats[dateKey].sessions.push(s);
+      if (isSessionMain) {
+        rec.dailyStats[dateKey].mainMinutes += dur;
+      }
+      if (isSessionWfh) {
+        rec.dailyStats[dateKey].wfhMinutes += dur;
+      }
 
       if (s.locationVerified) rec.verifiedCount++;
 
@@ -194,6 +221,8 @@ export async function GET(req: Request) {
         rec.lateCount++;
       }
     }
+
+    const standardShiftMinutes = Math.round(hoursPerDay * 60);
 
     // ── Build per-staff summary ──────────────────────────────────────────────
     const staffSummary = allUsers.map((user) => {
@@ -212,21 +241,58 @@ export async function GET(req: Request) {
         expectedHoursPerStaff > 0
           ? Math.min(100, Math.round((actualMinutes / (expectedHoursPerStaff * 60)) * 100))
           : 0;
-      const overtimeMinutes = Math.max(0, actualMinutes - Math.round(expectedHoursPerStaff * 60));
-      const undertimeMinutes = Math.max(0, Math.round(expectedHoursPerStaff * 60) - actualMinutes);
 
-      // Build daily breakdown array
+      // ── Calculate daily breakdown and overtime ────────────────────────────
+      // For each day worked: if staff completes 8H standard shift at Main Workplace,
+      // any extra time beyond standard shift hours on that day counts as Overtime.
+      let totalOvertimeMinutes = 0;
+      let totalUndertimeMinutes = 0;
+
       const dailyBreakdown = rec
-        ? Object.entries(rec.dailyMinutes)
+        ? Object.entries(rec.dailyStats)
             .sort(([a], [b]) => a.localeCompare(b))
-            .map(([date, mins]) => ({
-              date,
-              minutes: mins,
-              hours: Math.round((mins / 60) * 10) / 10,
-              expectedHours: hoursPerDay,
-              compliancePct: Math.min(100, Math.round((mins / (hoursPerDay * 60)) * 100)),
-            }))
+            .map(([date, day]) => {
+              const dayTotal = day.totalMinutes;
+              const dayMain = day.mainMinutes;
+              const dayWfh = day.wfhMinutes;
+
+              let dayOvertime = 0;
+              let dayUndertime = 0;
+
+              // If staff completed the required standard shift hours at the Main Workplace (or total time with Main workplace work):
+              if (dayMain >= standardShiftMinutes) {
+                // Completed full standard shift at Main Workplace -> all extra time is overtime
+                dayOvertime = Math.max(0, dayTotal - standardShiftMinutes);
+              } else if (dayTotal > standardShiftMinutes && dayMain > 0) {
+                // Completed standard shift with combination of Main workplace time -> excess is overtime
+                dayOvertime = Math.max(0, dayTotal - standardShiftMinutes);
+              } else if (dayTotal < standardShiftMinutes) {
+                // Below standard daily shift
+                dayUndertime = standardShiftMinutes - dayTotal;
+              }
+
+              totalOvertimeMinutes += dayOvertime;
+              totalUndertimeMinutes += dayUndertime;
+
+              return {
+                date,
+                minutes: dayTotal,
+                hours: Math.round((dayTotal / 60) * 10) / 10,
+                mainMinutes: dayMain,
+                mainHours: Math.round((dayMain / 60) * 10) / 10,
+                wfhMinutes: dayWfh,
+                wfhHours: Math.round((dayWfh / 60) * 10) / 10,
+                expectedHours: hoursPerDay,
+                overtimeMinutes: dayOvertime,
+                overtimeHours: Math.round((dayOvertime / 60) * 10) / 10,
+                undertimeMinutes: dayUndertime,
+                compliancePct: Math.min(100, Math.round((dayTotal / (hoursPerDay * 60)) * 100)),
+              };
+            })
         : [];
+
+      const overtimeMinutes = totalOvertimeMinutes;
+      const undertimeMinutes = totalUndertimeMinutes;
 
       return {
         userId: user.id,
@@ -284,6 +350,9 @@ export async function GET(req: Request) {
 
     const staffPresent = Object.keys(byUser).length;
 
+    const totalOvertimeMinutesAll = staffSummary.reduce((sum, s) => sum + (s.overtimeMinutes || 0), 0);
+    const totalOvertimeHoursAll = Math.round((totalOvertimeMinutesAll / 60) * 10) / 10;
+
     return NextResponse.json({
       range,
       fromDate: fromDate.toISOString(),
@@ -301,6 +370,8 @@ export async function GET(req: Request) {
         totalVerified,
         totalMinutesAll,
         totalHoursAll: Math.round((totalMinutesAll / 60) * 10) / 10,
+        totalOvertimeMinutes: totalOvertimeMinutesAll,
+        totalOvertimeHours: totalOvertimeHoursAll,
         totalWfhMinutes,
         totalWfhHours: Math.round((totalWfhMinutes / 60) * 10) / 10,
         totalWfhSessions,

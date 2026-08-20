@@ -9,7 +9,14 @@ interface DailyEntry {
   date: string;
   minutes: number;
   hours: number;
+  mainMinutes?: number;
+  mainHours?: number;
+  wfhMinutes?: number;
+  wfhHours?: number;
   expectedHours: number;
+  overtimeMinutes?: number;
+  overtimeHours?: number;
+  undertimeMinutes?: number;
   compliancePct: number;
 }
 
@@ -64,6 +71,8 @@ interface AttendanceStats {
   totalSessions: number;
   totalVerified: number;
   totalHoursAll: number;
+  totalOvertimeMinutes?: number;
+  totalOvertimeHours?: number;
   totalWfhMinutes?: number;
   totalWfhHours?: number;
   totalWfhSessions?: number;
@@ -103,10 +112,13 @@ const fmt = {
   time: (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
   date: (iso: string) => new Date(iso).toLocaleDateString([], { day: 'numeric', month: 'short', weekday: 'short' }),
   dateShort: (iso: string) => new Date(iso).toLocaleDateString([], { day: 'numeric', month: 'short' }),
-  duration: (mins: number | null) => {
-    if (!mins) return '—';
-    const h = Math.floor(mins / 60), m = mins % 60;
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  duration: (mins: number | null | undefined) => {
+    if (mins == null) return '—';
+    if (mins <= 0) return '0m';
+    const h = Math.floor(mins / 60), m = Math.round(mins % 60);
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
   },
 };
 
@@ -251,16 +263,16 @@ function StaffDetail({ staff, schedule }: { staff: StaffRecord; schedule: Schedu
               {
                 icon: '⬆️',
                 label: 'Overtime',
-                value: fmt.duration(staff.overtimeMinutes),
-                sub: 'extra beyond schedule',
-                color: 'text-purple-400',
+                value: staff.overtimeMinutes > 0 ? `+${fmt.duration(staff.overtimeMinutes)}` : '0m',
+                sub: 'extra beyond 8h at Main Workplace',
+                color: staff.overtimeMinutes > 0 ? 'text-purple-400 font-extrabold' : 'text-slate-400',
               },
               {
                 icon: '⬇️',
                 label: 'Undertime',
-                value: fmt.duration(staff.undertimeMinutes),
-                sub: 'below expected',
-                color: staff.undertimeMinutes > 0 ? 'text-rose-400' : 'text-slate-500',
+                value: staff.undertimeMinutes > 0 ? `-${fmt.duration(staff.undertimeMinutes)}` : '0m',
+                sub: 'below 8h schedule',
+                color: staff.undertimeMinutes > 0 ? 'text-rose-400' : 'text-slate-400',
               },
               {
                 icon: '⚠️',
@@ -306,8 +318,9 @@ function StaffDetail({ staff, schedule }: { staff: StaffRecord; schedule: Schedu
               <tr className="border-b border-flora-border text-slate-400 uppercase tracking-wider">
                 <th className="text-left p-2.5">Date</th>
                 <th className="text-right p-2.5">Hours Worked</th>
+                <th className="text-right p-2.5">Main Workplace</th>
                 <th className="text-right p-2.5">Expected</th>
-                <th className="text-right p-2.5">Diff</th>
+                <th className="text-right p-2.5">Overtime / Diff</th>
                 <th className="text-center p-2.5">Compliance</th>
               </tr>
             </thead>
@@ -315,7 +328,8 @@ function StaffDetail({ staff, schedule }: { staff: StaffRecord; schedule: Schedu
               {staff.expectedWorkingDays > 0 && (() => {
                 const rows = [];
                 for (const d of staff.dailyBreakdown) {
-                  const diff = d.hours - d.expectedHours;
+                  const hasOvertime = (d.overtimeMinutes || 0) > 0;
+                  const hasUndertime = (d.undertimeMinutes || 0) > 0;
                   rows.push(
                     <tr key={d.date} className="border-b border-flora-border/50 last:border-0 hover:bg-flora-card/50">
                       <td className="p-2.5 text-slate-200 font-semibold">{fmt.date(d.date)}</td>
@@ -324,11 +338,22 @@ function StaffDetail({ staff, schedule }: { staff: StaffRecord; schedule: Schedu
                           {d.hours}h
                         </span>
                       </td>
+                      <td className="p-2.5 text-right text-slate-300">
+                        {d.mainHours != null ? `${d.mainHours}h` : '—'}
+                      </td>
                       <td className="p-2.5 text-right text-slate-400">{d.expectedHours}h</td>
                       <td className="p-2.5 text-right">
-                        <span className={diff >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
-                          {diff >= 0 ? '+' : ''}{Math.round(diff * 10) / 10}h
-                        </span>
+                        {hasOvertime ? (
+                          <span className="text-purple-400 font-bold">
+                            +{fmt.duration(d.overtimeMinutes)} OT
+                          </span>
+                        ) : hasUndertime ? (
+                          <span className="text-rose-400 font-medium">
+                            -{fmt.duration(d.undertimeMinutes)} UT
+                          </span>
+                        ) : (
+                          <span className="text-emerald-400/80 font-medium">Exact {d.expectedHours}h</span>
+                        )}
                       </td>
                       <td className="p-2.5">
                         <div className="flex items-center gap-2">
@@ -354,15 +379,22 @@ function StaffDetail({ staff, schedule }: { staff: StaffRecord; schedule: Schedu
               <tr className="bg-flora-card/60 border-t border-flora-border font-bold">
                 <td className="p-2.5 text-slate-300">Total</td>
                 <td className="p-2.5 text-right text-flora-sage">{staff.totalHours}h</td>
+                <td className="p-2.5 text-right text-emerald-300">{staff.onSiteHours || 0}h</td>
                 <td className="p-2.5 text-right text-slate-400">
                   {Math.round(schedule.hoursPerDay * staff.expectedWorkingDays)}h
                 </td>
                 <td className="p-2.5 text-right">
-                  <span className={staff.overtimeMinutes > 0 ? 'text-purple-400' : 'text-rose-400'}>
-                    {staff.overtimeMinutes > 0
-                      ? `+${Math.round(staff.overtimeMinutes / 60 * 10) / 10}h`
-                      : `-${Math.round(staff.undertimeMinutes / 60 * 10) / 10}h`}
-                  </span>
+                  {staff.overtimeMinutes > 0 ? (
+                    <span className="text-purple-400 font-extrabold">
+                      +{fmt.duration(staff.overtimeMinutes)} OT
+                    </span>
+                  ) : staff.undertimeMinutes > 0 ? (
+                    <span className="text-rose-400">
+                      -{fmt.duration(staff.undertimeMinutes)} UT
+                    </span>
+                  ) : (
+                    <span className="text-emerald-400">0m OT</span>
+                  )}
                 </td>
                 <td className="p-2.5 text-center">
                   <ComplianceRing pct={staff.compliancePct} size={40} />
@@ -573,13 +605,15 @@ export default function AttendancePage() {
       {data && !loading && (
         <>
           {/* ── KPI Row ── */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
             <StatBadge icon="👥" label="Present" value={`${stats!.staffPresent}/${stats!.totalStaff}`}
               sub={`${stats!.attendanceRate}% attendance rate`} color="text-emerald-400" />
             <StatBadge icon="🏢" label="On-Site Hours" value={`${stats!.totalOnSiteHours || 0}h`}
               sub={`${stats!.totalOnSiteSessions || 0} sessions`} color="text-emerald-400" />
             <StatBadge icon="🏠" label="WFH Hours" value={`${stats!.totalWfhHours || 0}h`}
               sub={`${stats!.totalWfhSessions || 0} sessions`} color="text-blue-400" />
+            <StatBadge icon="⬆️" label="Overtime Hours" value={`${stats!.totalOvertimeHours || 0}h`}
+              sub="extra beyond 8h schedule" color="text-purple-400" />
             <StatBadge icon="⏱️" label="Total Hours" value={`${stats!.totalHoursAll}h`}
               sub={`${stats!.totalSessions} total sessions`} color="text-flora-sage" />
             <StatBadge icon="📅" label="Working Days" value={`${schedule!.expectedWorkingDays}d`}
@@ -687,17 +721,19 @@ export default function AttendancePage() {
 
                       {/* Overtime / undertime */}
                       <div className="col-span-2 text-center">
-                        {staff.overtimeMinutes > 0 && (
+                        {staff.overtimeMinutes > 0 ? (
                           <div className="text-xs font-bold text-purple-400">
                             +{fmt.duration(staff.overtimeMinutes)} OT
                           </div>
-                        )}
-                        {staff.undertimeMinutes > 0 && (
+                        ) : staff.undertimeMinutes > 0 ? (
                           <div className="text-xs font-bold text-rose-400">
                             -{fmt.duration(staff.undertimeMinutes)} UT
                           </div>
+                        ) : hasRecord ? (
+                          <div className="text-xs text-emerald-400 font-medium">0m OT</div>
+                        ) : (
+                          <span className="text-xs text-slate-600">—</span>
                         )}
-                        {!hasRecord && <span className="text-xs text-slate-600">—</span>}
                         {staff.lateCount > 0 && (
                           <div className="text-[10px] text-amber-400">{staff.lateCount}× late</div>
                         )}
