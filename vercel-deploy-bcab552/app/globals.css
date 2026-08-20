@@ -127,23 +127,20 @@ body {
 
   html.light .app-shell-wash {
     background:
-      radial-gradient(circle at 18% 16%, rgba(107, 175, 145, 0.12) 0%, transparent 28%),
-      radial-gradient(circle at 86% 12%, rgba(78, 157, 130, 0.08) 0%, transparent 24%),
-      linear-gradient(180deg, rgba(248, 249, 246, 0.75) 0%, rgba(242, 245, 241, 0.55) 48%, rgba(245, 247, 243, 0.25) 100%);
+      radial-gradient(circle at 18% 16%, rgba(107, 175, 145, 0.10) 0%, transparent 28%),
+      radial-gradient(circle at 86% 12%, rgba(78, 157, 130, 0.06) 0%, transparent 24%),
+      linear-gradient(180deg, rgba(247, 248, 245, 0.85) 0%, rgba(243, 245, 242, 0.65) 48%, rgba(247, 248, 245, 0.35) 100%);
   }
 
   html.light .app-shell-floral {
-    opacity: 0.22;
+    opacity: 0.18;
     mix-blend-mode: normal;
   }
 
+  /* Outer Cards & Section Containers (Matching Sidebar #F7F8F5) */
   html.light .dashboard-shell .bg-flora-dark,
   html.light .dashboard-shell .bg-flora-dark\/90,
   html.light .dashboard-shell .bg-flora-dark\/95,
-  html.light .dashboard-shell .bg-flora-darker,
-  html.light .dashboard-shell .bg-flora-darker\/60,
-  html.light .dashboard-shell .bg-flora-darker\/80,
-  html.light .dashboard-shell .bg-flora-card,
   html.light .dashboard-shell .bg-slate-950,
   html.light .dashboard-shell .bg-slate-950\/95,
   html.light .dashboard-shell .bg-slate-950\/90,
@@ -159,27 +156,101 @@ body {
   html.light .dashboard-shell .bg-slate-800\/90,
   html.light .dashboard-shell .bg-slate-800\/80,
   html.light .dashboard-shell .bg-slate-800\/70,
-  html.light .dashboard-shell .bg-slate-700 {
-    background-color: #FAFBF8 !important;
-    background-image: linear-gradient(180deg, #FDFCFA 0%, #F5F7F3 100%) !important;
-    border-color: rgba(35, 48, 41, 0.12) !important;
-    box-shadow: 0 6px 22px -2px rgba(35, 48, 41, 0.06), 0 2px 6px -1px rgba(35, 48, 41, 0.03) !important;
+  html.light .dashboard-shell .bg-slate-700,
+  html.light .dashboard-shell .bg-gray-900,
+  html.light .dashboard-shell .bg-gray-800 {
+    background-color: #F7F8F5 !important;
+    background-image: none !important;
+    border-color: #DCE4DF !important;
+    box-shadow: 0 6px 20px -2px rgba(35, 48, 41, 0.05) !important;
+    color: #18221D !important;
   }
 
+  /* Inner Wells, Filter Bars & Sub-boxes (Matching Sidebar Active Role Box #EBF0EA) */
+  html.light .dashboard-shell .bg-flora-darker,
+  html.light .dashboard-shell .bg-flora-darker\/60,
+  html.light .dashboard-shell .bg-flora-darker\/80,
+  html.light .dashboard-shell [class*="bg-white/5"],
+  html.light .dashboard-shell [class*="bg-white/10"],
+  html.light .dashboard-shell [class*="bg-white/[0.04]"],
+  html.light .dashboard-shell [class*="bg-white/[0.06]"],
+  html.light .dashboard-shell [class*="bg-white/[0.08]"],
+  html.light .dashboard-shell [class*="bg-sky-400/"],
+  html.light .dashboard-shell [class*="bg-amber-400/"],
+  html.light .dashboard-shell [class*="bg-emerald-400/"],
+  html.light .dashboard-shell [class*="bg-rose-400/"] {
+    background-color: #EBF0EA !important;
+    background-image: none !important;
+    border-color: #DCE4DF !important;
+    color: #18221D !important;
+  }
+
+  /* Sub-cards, Action Buttons & Badges (Matching Sidebar Buttons #FAFBF8) */
+  html.light .dashboard-shell .bg-flora-card {
+    background-color: #FAFBF8 !important;
+    background-image: none !important;
+    border-color: #DCE4DF !important;
+    color: #18221D !important;
+  }
+
+  /* Remove Card Pastel Gradients in Light Mode */
+  html.light .dashboard-shell .bg-gradient-to-br.from-flora-dark,
+  html.light .dashboard-shell .bg-gradient-to-br.from-flora-card,
+  html.light .dashboard-shell .from-flora-dark,
+  html.light .dashboard-shell .via-flora-card,
+  html.light .dashboard-shell .to-flora-darker {
+    background-color: #F7F8F5 !important;
+    background-image: none !important;
+  }
+
+  /* Text Overrides */
   html.light .dashboard-shell .text-white,
   html.light .dashboard-shell .text-white\/90,
   html.light .dashboard-shell .text-white\/80,
   html.light .dashboard-shell .text-white\/70,
-  html.light .dashboard-shell .text-slate-50 {
-    color: #16201B !important;
+  html.light .dashboard-shell .text-slate-50,
+  html.light .dashboard-shell .text-slate-100,
+  html.light .dashboard-shell .text-slate-200,
+  html.light .dashboard-shell .text-slate-300 {
+    color: #18221D !important;
   }
 
+  html.light .dashboard-shell .text-slate-400,
+  html.light .dashboard-shell .text-slate-500,
+  html.light .dashboard-shell .text-slate-600 {
+    color: #4A5B52 !important;
+  }
+
+  /* Stat Accent Colors (Readable Deep Tones on Light Background) */
+  html.light .dashboard-shell .text-emerald-300,
+  html.light .dashboard-shell .text-emerald-200 {
+    color: #15803d !important;
+  }
+  html.light .dashboard-shell .text-sky-300,
+  html.light .dashboard-shell .text-sky-200 {
+    color: #0369a1 !important;
+  }
+  html.light .dashboard-shell .text-amber-300,
+  html.light .dashboard-shell .text-amber-200 {
+    color: #b45309 !important;
+  }
+  html.light .dashboard-shell .text-rose-300,
+  html.light .dashboard-shell .text-rose-200 {
+    color: #be123c !important;
+  }
+
+  /* Universal Borders */
   html.light .dashboard-shell .border-flora-border,
   html.light .dashboard-shell .border-flora-border\/60,
   html.light .dashboard-shell .border-slate-800,
   html.light .dashboard-shell .border-slate-800\/80,
-  html.light .dashboard-shell .border-slate-700 {
-    border-color: #D2DBD4 !important;
+  html.light .dashboard-shell .border-slate-700,
+  html.light .dashboard-shell .border-slate-200,
+  html.light .dashboard-shell [class*="border-sky-400/"],
+  html.light .dashboard-shell [class*="border-amber-400/"],
+  html.light .dashboard-shell [class*="border-emerald-400/"],
+  html.light .dashboard-shell [class*="border-rose-400/"] {
+    border-color: #DCE4DF !important;
   }
 }
 
@@ -196,27 +267,27 @@ body {
   }
 }
 
-/* Light Theme Overrides - TrueTone Warm White & Eye-Friendly Palette */
+/* Light Theme Overrides - TrueTone Warm Palette Matching Sidebar */
 html.light, body.light {
-  --flora-dark: #F4F6F2;
-  --flora-darker: #E7ECE6;
-  --flora-card: rgba(250, 251, 248, 0.94);
-  --flora-border: rgba(35, 48, 41, 0.12);
+  --flora-dark: #F7F8F5;
+  --flora-darker: #EBF0EA;
+  --flora-card: #FAFBF8;
+  --flora-border: #DCE4DF;
   --flora-text: #18221D;
   color-scheme: light;
   color: #18221D !important;
-  background-color: #F4F6F2 !important;
+  background-color: #F7F8F5 !important;
   background-image: 
-    radial-gradient(circle at 90% 10%, rgba(107, 175, 145, 0.12) 0%, transparent 40%),
-    radial-gradient(circle at 10% 90%, rgba(78, 157, 130, 0.08) 0%, transparent 50%),
-    linear-gradient(180deg, #F8F9F6 0%, #EFF2ED 100%) !important;
+    radial-gradient(circle at 90% 10%, rgba(107, 175, 145, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 10% 90%, rgba(78, 157, 130, 0.05) 0%, transparent 50%),
+    linear-gradient(180deg, #FAFBF8 0%, #F3F5F2 100%) !important;
 }
 
 body.light {
   background-image:
-    radial-gradient(circle at 14% 12%, rgba(107, 175, 145, 0.10) 0%, transparent 30%),
-    radial-gradient(circle at 82% 8%, rgba(78, 157, 130, 0.06) 0%, transparent 24%),
-    linear-gradient(180deg, #F8F9F6 0%, #EFF2ED 100%) !important;
+    radial-gradient(circle at 14% 12%, rgba(107, 175, 145, 0.08) 0%, transparent 30%),
+    radial-gradient(circle at 82% 8%, rgba(78, 157, 130, 0.05) 0%, transparent 24%),
+    linear-gradient(180deg, #FAFBF8 0%, #F3F5F2 100%) !important;
 }
 
 ::selection {
@@ -228,14 +299,14 @@ body.light {
 html.light .bg-flora-dark,
 html.light .bg-flora-dark\/90,
 html.light .bg-flora-dark\/95 {
-  background-color: #EBF0EA !important;
+  background-color: #F7F8F5 !important;
   color: #18221D !important;
 }
 
 html.light .bg-flora-darker,
 html.light .bg-flora-darker\/60,
 html.light .bg-flora-darker\/80 {
-  background-color: #E2E8E1 !important;
+  background-color: #EBF0EA !important;
   color: #18221D !important;
 }
 
@@ -259,7 +330,7 @@ html.light .bg-slate-800\/80,
 html.light .bg-slate-800\/70,
 html.light .bg-gray-900,
 html.light .bg-gray-800 {
-  background-color: #FAFBF8 !important;
+  background-color: #F7F8F5 !important;
   color: #18221D !important;
 }
 
@@ -270,13 +341,13 @@ html.light .border-slate-800\/80,
 html.light .border-slate-800\/70,
 html.light .border-slate-700,
 html.light .border-slate-700 {
-  border-color: #D2DBD4 !important;
+  border-color: #DCE4DF !important;
 }
 
 html.light .text-slate-100,
 html.light .text-slate-200,
 html.light .text-slate-300 {
-  color: #16201B !important;
+  color: #18221D !important;
 }
 
 html.light .text-slate-400 {
@@ -288,7 +359,7 @@ html.light .text-slate-500 {
 }
 
 html.light .text-slate-600 {
-  color: #38463F !important;
+  color: #4A5B52 !important;
 }
 
 html.light .dashboard-shell svg text,
@@ -297,7 +368,7 @@ html.light .dashboard-shell svg tspan {
 }
 
 html.light .dashboard-shell svg line {
-  stroke: #CBD5CD !important;
+  stroke: #DCE4DF !important;
 }
 
 /* Custom Scrollbars */

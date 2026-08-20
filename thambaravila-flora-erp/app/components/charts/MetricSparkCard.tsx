@@ -69,11 +69,10 @@ export default function MetricSparkCard({
   const cardContent = (
     <div
       className={[
-        'rounded-2xl border p-5 shadow-lg transition-all duration-200 hover:scale-[1.02] hover:shadow-xl',
+        'rounded-2xl border p-5 transition-all duration-200 hover:scale-[1.02] hover:shadow-md',
         isLight
-          ? 'border-[#DCE4DF] bg-[#FAFBF8] text-[#18221D] shadow-[0_12px_32px_rgba(35,48,41,0.06)]'
-          : 'border-white/10 bg-[#171c1a]/78 text-white shadow-[0_18px_40px_rgba(0,0,0,0.22)]',
-        `bg-gradient-to-br ${getAccentClass()}`,
+          ? 'border-[#DCE4DF] bg-[#FAFBF8] text-[#18221D] shadow-[0_6px_20px_rgba(35,48,41,0.04)]'
+          : `border-white/10 bg-[#171c1a]/78 text-white shadow-[0_18px_40px_rgba(0,0,0,0.22)] bg-gradient-to-br ${getAccentClass()}`,
         href ? 'cursor-pointer' : '',
       ].join(' ')}
     >
