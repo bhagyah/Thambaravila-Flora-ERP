@@ -67,6 +67,7 @@ model Role {
   id          String   @id @default(cuid())
   name        String   @unique
   description String?
+  bgImageUrl  String?  @map("bg_image_url")
   isSystem    Boolean  @default(false) @map("is_system") // System roles (Owner, IT) cannot be deleted
   canBeEdited Boolean  @default(true) @map("can_be_edited") // Owner role cannot be edited
   createdAt   DateTime @default(now()) @map("created_at")

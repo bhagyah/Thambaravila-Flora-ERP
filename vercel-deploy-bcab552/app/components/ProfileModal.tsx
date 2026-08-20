@@ -66,6 +66,8 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   });
 
   // Background Customization State
+  const [allRoles, setAllRoles] = useState<any[]>([]);
+  const [selectedTargetRoleId, setSelectedTargetRoleId] = useState<string>('');
   const [customBgPreview, setCustomBgPreview] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<'dark' | 'light'>('dark');
 
@@ -100,8 +102,10 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       if (res.ok) {
         const data = await res.json();
         setProfile(data.profile);
-        setCustomBgPreview(data.profile.bgImageUrl || customBg || null);
+        setSelectedTargetRoleId(data.profile.roleId || '');
+        setCustomBgPreview(data.profile.bgImageUrl || data.profile.roleBgImageUrl || customBg || null);
         setTeamMembers(data.teamMembers || []);
+        setAllRoles(data.allRoles || []);
       }
     } catch (e) {
       console.error('Failed to load profile data', e);
@@ -149,7 +153,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           ctx.drawImage(img, 0, 0, width, height);
           const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
           setCustomBgPreview(optimizedDataUrl);
-          setMsg('📷 Image loaded! Click "Apply & Save Background" to set it.');
+          setMsg('📷 Image loaded! Click "Apply & Save Role Background" to set it.');
         }
       };
       img.src = rawDataUrl;
@@ -161,19 +165,26 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     setSaving(true);
     setMsg('');
 
+    const targetRoleObj = allRoles.find((r) => r.id === selectedTargetRoleId) || { name: profile.roleName, id: profile.roleId };
+    const targetRoleName = targetRoleObj.name || profile.roleName;
+
     try {
       const res = await fetch('/api/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bgImageUrl: customBgPreview || '',
+          targetRoleId: selectedTargetRoleId || profile.roleId,
         }),
       });
 
       if (res.ok) {
-        setCustomBg(customBgPreview || null);
-        setMsg('✓ Background image updated and applied across all views!');
-        setTimeout(() => setMsg(''), 3500);
+        setCustomBg(customBgPreview || null, targetRoleName);
+        setAllRoles((prev) =>
+          prev.map((r) => (r.id === selectedTargetRoleId ? { ...r, bgImageUrl: customBgPreview || null } : r))
+        );
+        setMsg(`✓ ${targetRoleName} background updated successfully! Other roles remain unchanged.`);
+        setTimeout(() => setMsg(''), 4000);
       } else {
         setMsg('❌ Failed to update background image');
       }
@@ -188,20 +199,27 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     setSaving(true);
     setMsg('');
 
+    const targetRoleObj = allRoles.find((r) => r.id === selectedTargetRoleId) || { name: profile.roleName, id: profile.roleId };
+    const targetRoleName = targetRoleObj.name || profile.roleName;
+
     try {
       const res = await fetch('/api/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bgImageUrl: '',
+          targetRoleId: selectedTargetRoleId || profile.roleId,
         }),
       });
 
       if (res.ok) {
         setCustomBgPreview(null);
-        setCustomBg(null);
-        setMsg('✓ Restored default Thambaravila Flora background!');
-        setTimeout(() => setMsg(''), 3500);
+        setCustomBg(null, targetRoleName);
+        setAllRoles((prev) =>
+          prev.map((r) => (r.id === selectedTargetRoleId ? { ...r, bgImageUrl: null } : r))
+        );
+        setMsg(`✓ Restored default background for ${targetRoleName}!`);
+        setTimeout(() => setMsg(''), 4000);
       } else {
         setMsg('❌ Failed to reset background');
       }
@@ -382,11 +400,51 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             <div className="space-y-6">
               <div>
                 <h3 className="text-base font-black text-slate-100 flex items-center gap-2">
-                  <span>🖼️</span> Personalize ERP Background Image
+                  <span>🖼️</span> Role-Based ERP Background Wallpaper
                 </h3>
                 <p className="text-slate-400 text-xs mt-1">
-                  Upload any wallpaper from your device or choose a curated aesthetic theme. The background automatically scales and adapts smoothly for both <b>Dark Mode</b> and <b>Light Mode</b>.
+                  Customize the background for each specific role. Changes are stored <b>per role</b> and will not affect other roles. Fits seamlessly in both <b>Dark Mode</b> and <b>Light Mode</b>.
                 </p>
+              </div>
+
+              {/* Role Scoping Bar */}
+              <div className="p-3.5 rounded-2xl bg-flora-darker border border-flora-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner">
+                <div>
+                  <div className="font-bold text-slate-100 text-xs flex items-center gap-1.5">
+                    <span>🎯</span>
+                    <span>Role-Based Wallpaper Workspace</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Each role has its own dedicated background. Changing this wallpaper applies only to the selected role.
+                  </p>
+                </div>
+
+                {isOwnerOrIT && allRoles.length > 0 ? (
+                  <div className="flex items-center gap-2">
+                    <label className="text-[11px] font-bold text-slate-400">Target Role:</label>
+                    <select
+                      value={selectedTargetRoleId}
+                      onChange={(e) => {
+                        const newRoleId = e.target.value;
+                        setSelectedTargetRoleId(newRoleId);
+                        const matched = allRoles.find((r) => r.id === newRoleId);
+                        setCustomBgPreview(matched?.bgImageUrl || null);
+                      }}
+                      className="px-3 py-1.5 bg-flora-dark border border-flora-border rounded-xl text-xs font-bold text-flora-sage focus:outline-none focus:border-flora-sage shadow"
+                    >
+                      {allRoles.map((r) => (
+                        <option key={r.id} value={r.id} className="bg-slate-900 text-slate-100">
+                          {r.name} Role
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="px-3 py-1.5 bg-flora-sage/20 border border-flora-sage/40 rounded-xl text-flora-sage font-extrabold text-xs flex items-center gap-1.5 shadow-sm">
+                    <span>🛡️</span>
+                    <span>{profile.roleName} Workspace</span>
+                  </div>
+                )}
               </div>
 
               {/* Live Preview Box */}
@@ -465,7 +523,9 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                         : 'bg-slate-900/90 border-flora-border text-slate-100'
                     }`}>
                       <div className="text-[9px] uppercase font-bold text-slate-400">Active Role</div>
-                      <div className="text-sm font-black text-amber-400">{profile.roleName || 'Staff'}</div>
+                      <div className="text-sm font-black text-amber-400">
+                        {allRoles.find((r) => r.id === selectedTargetRoleId)?.name || profile.roleName || 'Staff'}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -520,7 +580,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                         key={preset.id}
                         onClick={() => {
                           setCustomBgPreview(preset.url || null);
-                          setMsg(`✨ Selected "${preset.name}". Click "Apply & Save Background" below.`);
+                          setMsg(`✨ Selected "${preset.name}". Click "Apply & Save Role Background" below.`);
                         }}
                         className={`group relative rounded-xl border p-2 text-left transition overflow-hidden flex flex-col justify-between ${
                           isSelected
@@ -552,10 +612,10 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 <button
                   type="button"
                   onClick={handleResetBackground}
-                  disabled={saving || !customBg}
+                  disabled={saving || !customBgPreview}
                   className="px-4 py-2 bg-flora-card text-slate-400 hover:text-rose-300 font-bold rounded-xl border border-flora-border hover:border-rose-700/50 transition disabled:opacity-40"
                 >
-                  🗑️ Reset to Default
+                  🗑️ Reset Role to Default
                 </button>
 
                 <div className="flex items-center space-x-2">
@@ -573,7 +633,11 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                     className="px-5 py-2 bg-gradient-to-r from-flora-green to-flora-sage hover:from-flora-sage hover:to-flora-green text-slate-950 font-black rounded-xl shadow-lg transition disabled:opacity-50 flex items-center gap-1.5"
                   >
                     <span>🚀</span>
-                    <span>{saving ? 'Applying...' : 'Apply & Save Background'}</span>
+                    <span>
+                      {saving
+                        ? 'Applying...'
+                        : `Apply & Save for ${allRoles.find((r) => r.id === selectedTargetRoleId)?.name || profile.roleName || 'Role'}`}
+                    </span>
                   </button>
                 </div>
               </div>

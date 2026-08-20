@@ -26,6 +26,7 @@ export async function GET(req: Request) {
     const isOwnerOrIT = roleName === 'Owner' || roleName === 'IT/Admin';
 
     let teamMembers: any[] = [];
+    let allRoles: any[] = [];
     if (isOwnerOrIT) {
       teamMembers = await prisma.user.findMany({
         select: {
@@ -41,7 +42,14 @@ export async function GET(req: Request) {
         },
         orderBy: { createdAt: 'asc' },
       });
+
+      allRoles = await prisma.role.findMany({
+        select: { id: true, name: true, bgImageUrl: true },
+        orderBy: { name: 'asc' },
+      });
     }
+
+    const effectiveBgImageUrl = user.role.bgImageUrl || user.bgImageUrl || null;
 
     return NextResponse.json({
       profile: {
@@ -51,12 +59,16 @@ export async function GET(req: Request) {
         idNumber: user.idNumber || 'TF-EMP-00' + user.id.slice(-3).toUpperCase(),
         phone: user.phone || '+94 77 123 4567',
         avatarUrl: user.avatarUrl || '🌱',
-        bgImageUrl: user.bgImageUrl || null,
+        bgImageUrl: effectiveBgImageUrl,
+        roleBgImageUrl: user.role.bgImageUrl || null,
+        userBgImageUrl: user.bgImageUrl || null,
+        roleId: user.role.id,
         roleName: user.role.name,
         requires2FA: requiresTwoFactor(user.role.name, user.totpSecretEncrypted || user.totpSecret),
         createdAt: user.createdAt,
       },
       teamMembers,
+      allRoles,
     });
   } catch (error) {
     console.error('Error fetching profile:', error);
@@ -73,14 +85,24 @@ export async function PATCH(req: Request) {
 
   try {
     const body = await req.json();
-    const { name, idNumber, phone, avatarUrl, bgImageUrl, targetUserId } = body;
+    const { name, idNumber, phone, avatarUrl, bgImageUrl, targetUserId, targetRoleId } = body;
 
-    // Check if updating another user (only allowed for Owner or IT)
+    // Check if updating another user or role (only allowed for Owner or IT)
     const currentUserRole = session.user.role.name;
     const isOwnerOrIT = currentUserRole === 'Owner' || currentUserRole === 'IT/Admin';
 
     const userIdToUpdate = (targetUserId && isOwnerOrIT) ? targetUserId : session.user.id;
 
+    const userBefore = await prisma.user.findUnique({
+      where: { id: userIdToUpdate },
+      include: { role: true },
+    });
+
+    if (!userBefore) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // 1. Update user fields
     const updatedUser = await prisma.user.update({
       where: { id: userIdToUpdate },
       data: {
@@ -93,13 +115,39 @@ export async function PATCH(req: Request) {
       include: { role: true },
     });
 
+    // 2. Update role-wise background for this role (or targeted role if Owner/IT)
+    if (bgImageUrl !== undefined) {
+      const roleIdToUpdate = (targetRoleId && isOwnerOrIT) ? targetRoleId : userBefore.roleId;
+      if (roleIdToUpdate) {
+        await prisma.role.update({
+          where: { id: roleIdToUpdate },
+          data: {
+            bgImageUrl: bgImageUrl || null,
+          },
+        });
+      }
+    }
+
+    const reloadedRole = await prisma.role.findUnique({
+      where: { id: updatedUser.roleId },
+    });
+
     await createAuditLog({
       userId: session.user.id,
       action: 'USER_PROFILE_UPDATED',
       entityType: 'user',
       entityId: userIdToUpdate,
-      details: { name, idNumber, phone, avatarUrl, bgImageUrl: bgImageUrl ? 'custom_image_set' : 'cleared' },
+      details: {
+        name,
+        idNumber,
+        phone,
+        avatarUrl,
+        bgImageUrl: bgImageUrl ? 'custom_image_set' : 'cleared',
+        roleName: userBefore.role.name,
+      },
     });
+
+    const effectiveBg = reloadedRole?.bgImageUrl || updatedUser.bgImageUrl || null;
 
     return NextResponse.json({
       profile: {
@@ -109,7 +157,9 @@ export async function PATCH(req: Request) {
         idNumber: updatedUser.idNumber,
         phone: updatedUser.phone,
         avatarUrl: updatedUser.avatarUrl,
-        bgImageUrl: updatedUser.bgImageUrl,
+        bgImageUrl: effectiveBg,
+        roleBgImageUrl: reloadedRole?.bgImageUrl || null,
+        roleId: updatedUser.role.id,
         roleName: updatedUser.role.name,
       },
     });
