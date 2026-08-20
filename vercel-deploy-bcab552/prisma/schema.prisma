@@ -31,6 +31,7 @@ model User {
   idNumber                   String?   @map("id_number")
   phone                      String?
   avatarUrl                  String?   @map("avatar_url")
+  bgImageUrl                 String?   @map("bg_image_url")
   lastLogin                  DateTime? @map("last_login")
   failedAttempts             Int       @default(0) @map("failed_attempts") // For rate limiting
   lockedUntil                DateTime? @map("locked_until") // Account lockout

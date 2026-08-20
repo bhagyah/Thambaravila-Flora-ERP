@@ -51,6 +51,7 @@ export async function GET(req: Request) {
         idNumber: user.idNumber || 'TF-EMP-00' + user.id.slice(-3).toUpperCase(),
         phone: user.phone || '+94 77 123 4567',
         avatarUrl: user.avatarUrl || '🌱',
+        bgImageUrl: user.bgImageUrl || null,
         roleName: user.role.name,
         requires2FA: requiresTwoFactor(user.role.name, user.totpSecretEncrypted || user.totpSecret),
         createdAt: user.createdAt,
@@ -72,7 +73,7 @@ export async function PATCH(req: Request) {
 
   try {
     const body = await req.json();
-    const { name, idNumber, phone, avatarUrl, targetUserId } = body;
+    const { name, idNumber, phone, avatarUrl, bgImageUrl, targetUserId } = body;
 
     // Check if updating another user (only allowed for Owner or IT)
     const currentUserRole = session.user.role.name;
@@ -87,6 +88,7 @@ export async function PATCH(req: Request) {
         ...(idNumber !== undefined && { idNumber }),
         ...(phone !== undefined && { phone }),
         ...(avatarUrl !== undefined && { avatarUrl }),
+        ...(bgImageUrl !== undefined && { bgImageUrl: bgImageUrl || null }),
       },
       include: { role: true },
     });
@@ -96,7 +98,7 @@ export async function PATCH(req: Request) {
       action: 'USER_PROFILE_UPDATED',
       entityType: 'user',
       entityId: userIdToUpdate,
-      details: { name, idNumber, phone, avatarUrl },
+      details: { name, idNumber, phone, avatarUrl, bgImageUrl: bgImageUrl ? 'custom_image_set' : 'cleared' },
     });
 
     return NextResponse.json({
@@ -107,6 +109,7 @@ export async function PATCH(req: Request) {
         idNumber: updatedUser.idNumber,
         phone: updatedUser.phone,
         avatarUrl: updatedUser.avatarUrl,
+        bgImageUrl: updatedUser.bgImageUrl,
         roleName: updatedUser.role.name,
       },
     });

@@ -1,20 +1,24 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 type Theme = 'dark' | 'light';
 
 interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
+  customBg: string | null;
+  setCustomBg: (bg: string | null) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark');
+  const [customBg, setCustomBgState] = useState<string | null>(null);
 
   useEffect(() => {
+    // 1. Theme init
     const savedTheme = localStorage.getItem('flora_theme') as Theme | null;
     if (savedTheme === 'light' || savedTheme === 'dark') {
       setTheme(savedTheme);
@@ -22,6 +26,28 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } else {
       applyTheme('dark');
     }
+
+    // 2. Custom Background init from localStorage for instantaneous rendering
+    const savedBg = localStorage.getItem('flora_custom_bg');
+    if (savedBg) {
+      setCustomBgState(savedBg);
+    }
+
+    // 3. Sync from backend user profile
+    fetch('/api/profile')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.profile?.bgImageUrl !== undefined) {
+          const bg = data.profile.bgImageUrl || null;
+          setCustomBgState(bg);
+          if (bg) {
+            localStorage.setItem('flora_custom_bg', bg);
+          } else {
+            localStorage.removeItem('flora_custom_bg');
+          }
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const applyTheme = (newTheme: Theme) => {
@@ -48,8 +74,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     applyTheme(nextTheme);
   };
 
+  const setCustomBg = useCallback((bg: string | null) => {
+    setCustomBgState(bg);
+    if (bg) {
+      localStorage.setItem('flora_custom_bg', bg);
+    } else {
+      localStorage.removeItem('flora_custom_bg');
+    }
+  }, []);
+
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, customBg, setCustomBg }}>
       {children}
     </ThemeContext.Provider>
   );
@@ -62,6 +97,8 @@ export function useTheme() {
     return {
       theme: 'dark' as Theme,
       toggleTheme: () => {},
+      customBg: null as string | null,
+      setCustomBg: () => {},
     };
   }
   return context;

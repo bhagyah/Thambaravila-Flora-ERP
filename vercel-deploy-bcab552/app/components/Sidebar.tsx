@@ -300,13 +300,14 @@ export default function Sidebar() {
                   setProfileModalOpen(true);
                   setMobileOpen(false);
                 }}
-                className={`mt-3 min-h-11 w-full rounded-xl border px-3 py-2 text-xs font-bold transition ${
+                className={`mt-3 min-h-11 w-full rounded-xl border px-3 py-2 text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                   isLight
                     ? 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-white'
                     : 'border-white/10 bg-white/[0.08] text-slate-200 hover:bg-white/[0.12]'
                 }`}
               >
-                Profile &amp; Password
+                <span>🖼️</span>
+                <span>Profile &amp; Wallpaper</span>
               </button>
             </div>
           </div>

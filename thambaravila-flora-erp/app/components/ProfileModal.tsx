@@ -1,17 +1,58 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { signOut, useSession } from 'next-auth/react';
+import { useTheme } from '../context/ThemeContext';
 
 interface ProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+const PRESET_WALLPAPERS = [
+  {
+    id: 'default',
+    name: 'Original Flora ERP',
+    url: '',
+    preview: '/dashboard-floral-bg.png',
+    desc: 'Default Thambaravila botanical watercolor artwork',
+  },
+  {
+    id: 'emerald-botanic',
+    name: 'Emerald Botanic Garden',
+    url: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=1920&q=80',
+    preview: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=400&q=80',
+    desc: 'Lush tropical emerald foliage & rainforest leaves',
+  },
+  {
+    id: 'midnight-rose',
+    name: 'Midnight Rose Luxury',
+    url: 'https://images.unsplash.com/photo-1508615039623-a25605d2b022?auto=format&fit=crop&w=1920&q=80',
+    preview: 'https://images.unsplash.com/photo-1508615039623-a25605d2b022?auto=format&fit=crop&w=400&q=80',
+    desc: 'Deep velvety petals with ambient lighting',
+  },
+  {
+    id: 'golden-bloom',
+    name: 'Golden Bloom Elegance',
+    url: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1920&q=80',
+    preview: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=400&q=80',
+    desc: 'Warm sunset wedding floral bloom',
+  },
+  {
+    id: 'minimal-slate',
+    name: 'Modern Executive Slate',
+    url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1920&q=80',
+    preview: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+    desc: 'Clean contemporary architectural flow',
+  },
+];
+
 export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const { data: session } = useSession();
+  const { theme, customBg, setCustomBg } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Current User Profile State
   const [profile, setProfile] = useState<any>({
@@ -20,12 +61,17 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     idNumber: '',
     phone: '',
     avatarUrl: '🌱',
+    bgImageUrl: null,
     roleName: '',
   });
 
+  // Background Customization State
+  const [customBgPreview, setCustomBgPreview] = useState<string | null>(null);
+  const [previewMode, setPreviewMode] = useState<'dark' | 'light'>('dark');
+
   // Team members list for Owner / IT Admin
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'my_profile' | 'security' | 'team_directory'>('my_profile');
+  const [activeTab, setActiveTab] = useState<'my_profile' | 'background' | 'security' | 'team_directory'>('my_profile');
   const [msg, setMsg] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordNotice, setPasswordNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -42,9 +88,10 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       setActiveTab('my_profile');
       setPasswordNotice(null);
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setPreviewMode(theme);
       fetchProfileData();
     }
-  }, [isOpen, session]);
+  }, [isOpen, session, theme]);
 
   const fetchProfileData = async () => {
     try {
@@ -53,12 +100,115 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       if (res.ok) {
         const data = await res.json();
         setProfile(data.profile);
+        setCustomBgPreview(data.profile.bgImageUrl || customBg || null);
         setTeamMembers(data.teamMembers || []);
       }
     } catch (e) {
       console.error('Failed to load profile data', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImageUpload = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setMsg('❌ Please upload a valid image file (PNG, JPG, WEBP).');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setMsg('❌ Image size is too large. Please select an image under 10MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const rawDataUrl = e.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const maxWidth = 1920;
+        const maxHeight = 1080;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          if (width / height > maxWidth / maxHeight) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          setCustomBgPreview(optimizedDataUrl);
+          setMsg('📷 Image loaded! Click "Apply & Save Background" to set it.');
+        }
+      };
+      img.src = rawDataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveBackground = async () => {
+    setSaving(true);
+    setMsg('');
+
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bgImageUrl: customBgPreview || '',
+        }),
+      });
+
+      if (res.ok) {
+        setCustomBg(customBgPreview || null);
+        setMsg('✓ Background image updated and applied across all views!');
+        setTimeout(() => setMsg(''), 3500);
+      } else {
+        setMsg('❌ Failed to update background image');
+      }
+    } catch {
+      setMsg('❌ Error saving background');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleResetBackground = async () => {
+    setSaving(true);
+    setMsg('');
+
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bgImageUrl: '',
+        }),
+      });
+
+      if (res.ok) {
+        setCustomBgPreview(null);
+        setCustomBg(null);
+        setMsg('✓ Restored default Thambaravila Flora background!');
+        setTimeout(() => setMsg(''), 3500);
+      } else {
+        setMsg('❌ Failed to reset background');
+      }
+    } catch {
+      setMsg('❌ Error resetting background');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -165,40 +315,56 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           </button>
         </div>
 
+        {/* Tab Navigation */}
         <div className="flex min-h-12 gap-1 overflow-x-auto border-b border-flora-border bg-flora-darker/40 px-4 pt-2 text-xs font-bold sm:px-5">
           <button
             type="button"
             onClick={() => setActiveTab('my_profile')}
-            className={`min-h-11 shrink-0 border-b-2 px-3 transition ${
+            className={`min-h-11 shrink-0 border-b-2 px-3 transition flex items-center gap-1.5 ${
               activeTab === 'my_profile'
                 ? 'border-flora-sage text-flora-sage font-extrabold'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            My Profile
+            <span>👤</span>
+            <span>My Profile</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('background')}
+            className={`min-h-11 shrink-0 border-b-2 px-3 transition flex items-center gap-1.5 ${
+              activeTab === 'background'
+                ? 'border-flora-sage text-flora-sage font-extrabold'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span>🖼️</span>
+            <span>Custom Background</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('security')}
-            className={`min-h-11 shrink-0 border-b-2 px-3 transition ${
+            className={`min-h-11 shrink-0 border-b-2 px-3 transition flex items-center gap-1.5 ${
               activeTab === 'security'
                 ? 'border-flora-sage text-flora-sage font-extrabold'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            Change Password
+            <span>🔒</span>
+            <span>Change Password</span>
           </button>
           {isOwnerOrIT && (
             <button
               type="button"
               onClick={() => setActiveTab('team_directory')}
-              className={`min-h-11 shrink-0 border-b-2 px-3 transition ${
+              className={`min-h-11 shrink-0 border-b-2 px-3 transition flex items-center gap-1.5 ${
                 activeTab === 'team_directory'
                   ? 'border-flora-sage text-flora-sage font-extrabold'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
-              Team Directory ({teamMembers.length})
+              <span>👥</span>
+              <span>Team Directory ({teamMembers.length})</span>
             </button>
           )}
         </div>
@@ -206,12 +372,213 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         {/* Modal Body Content */}
         <div className="p-6 overflow-y-auto space-y-6 text-xs flex-1">
           {msg && (
-            <div className={`p-3 rounded-xl font-bold border ${msg.includes('✓') ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border-rose-500/30'}`}>
+            <div className={`p-3 rounded-xl font-bold border ${msg.includes('✓') || msg.includes('📷') ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border-rose-500/30'}`}>
               {msg}
             </div>
           )}
 
-          {activeTab === 'my_profile' ? (
+          {activeTab === 'background' ? (
+            /* ── Custom Background Tab ── */
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-base font-black text-slate-100 flex items-center gap-2">
+                  <span>🖼️</span> Personalize ERP Background Image
+                </h3>
+                <p className="text-slate-400 text-xs mt-1">
+                  Upload any wallpaper from your device or choose a curated aesthetic theme. The background automatically scales and adapts smoothly for both <b>Dark Mode</b> and <b>Light Mode</b>.
+                </p>
+              </div>
+
+              {/* Live Preview Box */}
+              <div className="bg-flora-darker border border-flora-border rounded-2xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-300 flex items-center gap-1.5">
+                    <span>👁️</span> Live Wallpaper Preview
+                  </span>
+                  <div className="flex items-center space-x-1.5 bg-flora-card border border-flora-border rounded-xl p-1">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode('dark')}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition flex items-center gap-1 ${
+                        previewMode === 'dark'
+                          ? 'bg-slate-900 text-flora-sage border border-flora-border shadow'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <span>🌙</span> Dark Mode
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode('light')}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition flex items-center gap-1 ${
+                        previewMode === 'light'
+                          ? 'bg-white text-slate-900 border border-slate-300 shadow font-extrabold'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <span>☀️</span> Light Mode
+                    </button>
+                  </div>
+                </div>
+
+                {/* Simulated App Frame */}
+                <div
+                  className="relative h-44 rounded-xl border border-flora-border overflow-hidden bg-cover bg-center shadow-inner flex flex-col justify-between p-3.5 transition-all"
+                  style={{
+                    backgroundImage: customBgPreview ? `url("${customBgPreview}")` : 'url("/dashboard-floral-bg.png")',
+                  }}
+                >
+                  {/* Adaptive Overlay Simulation */}
+                  {previewMode === 'light' ? (
+                    <div className="absolute inset-0 bg-white/75 backdrop-blur-[2px] bg-gradient-to-b from-white/85 via-white/60 to-white/80 pointer-events-none" />
+                  ) : (
+                    <div className="absolute inset-0 bg-slate-950/65 backdrop-blur-[1px] bg-gradient-to-b from-slate-950/75 via-slate-950/50 to-slate-950/80 pointer-events-none" />
+                  )}
+
+                  {/* Sample Mockup ERP Cards */}
+                  <div className="relative z-10 flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-6 h-6 rounded-lg bg-emerald-500/30 border border-emerald-400/50 flex items-center justify-center text-xs">
+                        🌸
+                      </div>
+                      <span className={`text-xs font-black tracking-wider ${previewMode === 'light' ? 'text-slate-900' : 'text-white'}`}>
+                        THAMBARAVILA ERP
+                      </span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
+                      Live Preview
+                    </span>
+                  </div>
+
+                  <div className="relative z-10 grid grid-cols-2 gap-2">
+                    <div className={`p-2.5 rounded-xl border backdrop-blur-sm shadow ${
+                      previewMode === 'light'
+                        ? 'bg-white/95 border-slate-300 text-slate-900'
+                        : 'bg-slate-900/90 border-flora-border text-slate-100'
+                    }`}>
+                      <div className="text-[9px] uppercase font-bold text-slate-400">Total Bookings</div>
+                      <div className="text-sm font-black text-flora-sage">24 Events</div>
+                    </div>
+                    <div className={`p-2.5 rounded-xl border backdrop-blur-sm shadow ${
+                      previewMode === 'light'
+                        ? 'bg-white/95 border-slate-300 text-slate-900'
+                        : 'bg-slate-900/90 border-flora-border text-slate-100'
+                    }`}>
+                      <div className="text-[9px] uppercase font-bold text-slate-400">Active Role</div>
+                      <div className="text-sm font-black text-amber-400">{profile.roleName || 'Staff'}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Upload Custom File Area */}
+              <div>
+                <label className="block font-bold text-slate-300 mb-2">Upload From Your Device</label>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageUpload(file);
+                  }}
+                />
+
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const file = e.dataTransfer.files?.[0];
+                    if (file) handleImageUpload(file);
+                  }}
+                  className="border-2 border-dashed border-flora-border hover:border-flora-sage/80 bg-flora-darker/60 hover:bg-flora-darker rounded-2xl p-6 text-center cursor-pointer transition flex flex-col items-center justify-center space-y-2 group"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-flora-card border border-flora-border text-2xl flex items-center justify-center group-hover:scale-110 transition shadow">
+                    📁
+                  </div>
+                  <div>
+                    <span className="font-extrabold text-flora-sage text-xs">Click to browse</span>
+                    <span className="text-slate-400 text-xs"> or drag &amp; drop an image</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500">
+                    Supports PNG, JPG, WEBP • Automatically optimized for instant loading
+                  </p>
+                </div>
+              </div>
+
+              {/* Curated Theme Presets */}
+              <div>
+                <label className="block font-bold text-slate-300 mb-2">Or Choose from Curated Theme Wallpapers</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {PRESET_WALLPAPERS.map((preset) => {
+                    const isSelected = (!customBgPreview && preset.id === 'default') || customBgPreview === preset.url;
+                    return (
+                      <button
+                        type="button"
+                        key={preset.id}
+                        onClick={() => {
+                          setCustomBgPreview(preset.url || null);
+                          setMsg(`✨ Selected "${preset.name}". Click "Apply & Save Background" below.`);
+                        }}
+                        className={`group relative rounded-xl border p-2 text-left transition overflow-hidden flex flex-col justify-between ${
+                          isSelected
+                            ? 'border-flora-sage bg-flora-sage/10 shadow-lg ring-2 ring-flora-sage/40'
+                            : 'border-flora-border bg-flora-darker hover:border-slate-400'
+                        }`}
+                      >
+                        <div
+                          className="h-16 rounded-lg bg-cover bg-center border border-flora-border mb-2 group-hover:scale-[1.02] transition"
+                          style={{ backgroundImage: `url("${preset.preview}")` }}
+                        />
+                        <div>
+                          <div className="font-bold text-[11px] text-slate-200 truncate">{preset.name}</div>
+                          <div className="text-[9px] text-slate-500 truncate">{preset.desc}</div>
+                        </div>
+                        {isSelected && (
+                          <span className="absolute top-3 right-3 px-1.5 py-0.5 rounded-full text-[8px] font-black bg-flora-sage text-slate-950 shadow">
+                            ✓ Selected
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-flora-border">
+                <button
+                  type="button"
+                  onClick={handleResetBackground}
+                  disabled={saving || !customBg}
+                  className="px-4 py-2 bg-flora-card text-slate-400 hover:text-rose-300 font-bold rounded-xl border border-flora-border hover:border-rose-700/50 transition disabled:opacity-40"
+                >
+                  🗑️ Reset to Default
+                </button>
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-4 py-2 bg-flora-card text-slate-300 font-bold rounded-xl border border-flora-border hover:bg-slate-800"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveBackground}
+                    disabled={saving}
+                    className="px-5 py-2 bg-gradient-to-r from-flora-green to-flora-sage hover:from-flora-sage hover:to-flora-green text-slate-950 font-black rounded-xl shadow-lg transition disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    <span>🚀</span>
+                    <span>{saving ? 'Applying...' : 'Apply & Save Background'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : activeTab === 'my_profile' ? (
             /* My Profile Form */
             <form onSubmit={handleSaveProfile} className="space-y-5">
               {/* Avatar Selector */}
