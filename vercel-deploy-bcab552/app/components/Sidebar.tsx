@@ -192,16 +192,16 @@ export default function Sidebar() {
   const isActive = (path: string) => pathname === path || pathname?.startsWith(`${path}/`);
   const isLight = theme === 'light';
   const mobileShell = isLight
-    ? 'border-[#C8C1B3] bg-[#E2DDD4] text-[#1E2421]'
+    ? 'border-[#DDD8D3] bg-[#F2F0EF] text-[#1E2421]'
     : 'border-white/10 bg-[#171c1a] text-white';
   const asideShell = isLight
-    ? 'border-[#C8C1B3] bg-[#E2DDD4] text-[#1E2421] shadow-[0_12px_36px_rgba(45,40,30,0.1)]'
+    ? 'border-[#DDD8D3] bg-[#F2F0EF] text-[#1E2421] shadow-[0_12px_36px_rgba(40,35,30,0.08)]'
     : 'border-white/10 bg-[#171c1a] text-white shadow-[0_12px_36px_rgba(0,0,0,0.22)]';
   const sectionShell = isLight
-    ? 'border-[#C8C1B3] bg-[#D6D0C3]'
+    ? 'border-[#DDD8D3] bg-[#E5E2DF]'
     : 'border-white/10 bg-white/5';
   const textStrong = isLight ? 'text-[#1E2421]' : 'text-slate-100';
-  const textMuted = isLight ? 'text-[#555E58]' : 'text-slate-400';
+  const textMuted = isLight ? 'text-[#5A625D]' : 'text-slate-400';
 
   const dashboardHref = roleName === 'Floral Designer' ? '/designer' : '/dashboard';
   const dashboardLabel = roleName === 'Floral Designer' ? 'Designer Studio' : 'Dashboard';
@@ -237,7 +237,7 @@ export default function Sidebar() {
     <>
       <div className={`fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b px-3 py-3 sm:px-4 lg:hidden ${mobileShell}`}>
         <Link href="/dashboard" className="flex min-w-0 flex-1 items-center gap-2.5">
-          <div className={`relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl border shadow-sm ${isLight ? 'border-[#C8C1B3] bg-[#ECE8E0]' : 'border-white/10 bg-white/[0.08]'}`}>
+          <div className={`relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl border shadow-sm ${isLight ? 'border-[#DDD8D3] bg-[#FAF9F8]' : 'border-white/10 bg-white/[0.08]'}`}>
             <Image src="/logo.png" alt="Thambaravila Flora" width={28} height={28} className="scale-[2.1] object-contain object-center" />
           </div>
           <div className="min-w-0">
@@ -250,7 +250,7 @@ export default function Sidebar() {
           <NotificationCenter />
           <button
             onClick={() => setMobileOpen((value) => !value)}
-            className={`grid h-11 w-11 place-items-center rounded-xl border ${isLight ? 'border-[#C8C1B3] bg-[#ECE8E0] text-[#1E2421]' : 'border-white/10 bg-white/[0.08] text-slate-100'}`}
+            className={`grid h-11 w-11 place-items-center rounded-xl border ${isLight ? 'border-[#DDD8D3] bg-[#FAF9F8] text-[#1E2421]' : 'border-white/10 bg-white/[0.08] text-slate-100'}`}
             aria-label="Toggle navigation"
           >
             {mobileOpen ? (
@@ -279,9 +279,9 @@ export default function Sidebar() {
         }`}
       >
         <div className="flex h-full flex-col overflow-y-auto">
-          <div className={`border-b p-4 ${isLight ? 'border-[#C8C1B3] bg-[#DAD4C8]' : 'border-white/10 bg-white/5'}`}>
+          <div className={`border-b p-4 ${isLight ? 'border-[#DDD8D3] bg-[#ECE9E6]' : 'border-white/10 bg-white/5'}`}>
             <div className="flex items-center gap-3">
-              <div className={`relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border shadow-sm ${isLight ? 'border-[#C8C1B3] bg-[#ECE8E0]' : 'border-white/10 bg-white/[0.08]'}`}>
+              <div className={`relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border shadow-sm ${isLight ? 'border-[#DDD8D3] bg-[#FAF9F8]' : 'border-white/10 bg-white/[0.08]'}`}>
                 <Image src="/logo.png" alt="Thambaravila Flora" width={40} height={40} className="scale-[2.1] object-contain object-center" />
               </div>
               <div className="min-w-0">
@@ -302,7 +302,7 @@ export default function Sidebar() {
                 }}
                 className={`mt-3 min-h-11 w-full rounded-xl border px-3 py-2 text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                   isLight
-                    ? 'border-[#C8C1B3] bg-[#ECE8E0] text-[#2C3B34] hover:bg-[#D6D0C3] hover:text-[#111A15]'
+                    ? 'border-[#DDD8D3] bg-[#FAF9F8] text-[#2C3B34] hover:bg-[#E5E2DF] hover:text-[#111A15]'
                     : 'border-white/10 bg-white/[0.08] text-slate-200 hover:bg-white/[0.12]'
                 }`}
               >

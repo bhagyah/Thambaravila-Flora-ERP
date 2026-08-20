@@ -515,8 +515,8 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                         <div
                           className="absolute inset-0 backdrop-blur-[2px] pointer-events-none transition-all duration-200"
                           style={{
-                            backgroundColor: `rgba(226, 221, 212, ${pLightAlpha})`,
-                            backgroundImage: `linear-gradient(180deg, rgba(238, 234, 226, ${pLightTopAlpha}) 0%, rgba(220, 214, 203, ${pLightAlpha}) 50%, rgba(226, 221, 212, ${pLightBotAlpha}) 100%)`,
+                            backgroundColor: `rgba(242, 240, 239, ${pLightAlpha})`,
+                            backgroundImage: `linear-gradient(180deg, rgba(248, 247, 246, ${pLightTopAlpha}) 0%, rgba(238, 235, 232, ${pLightAlpha}) 50%, rgba(242, 240, 239, ${pLightBotAlpha}) 100%)`,
                           }}
                         />
                       ) : (
@@ -547,7 +547,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                       <div className="relative z-10 grid grid-cols-2 gap-2">
                         <div className={`p-2.5 rounded-xl border backdrop-blur-sm shadow ${
                           previewMode === 'light'
-                            ? 'bg-[#E2DDD4] border-[#C8C1B3] text-[#1E2421]'
+                            ? 'bg-[#F2F0EF] border-[#DDD8D3] text-[#1E2421]'
                             : 'bg-slate-900/90 border-flora-border text-slate-100'
                         }`}>
                           <div className="text-[9px] uppercase font-bold text-slate-400">Total Bookings</div>
@@ -555,7 +555,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                         </div>
                         <div className={`p-2.5 rounded-xl border backdrop-blur-sm shadow ${
                           previewMode === 'light'
-                            ? 'bg-[#E2DDD4] border-[#C8C1B3] text-[#1E2421]'
+                            ? 'bg-[#F2F0EF] border-[#DDD8D3] text-[#1E2421]'
                             : 'bg-slate-900/90 border-flora-border text-slate-100'
                         }`}>
                           <div className="text-[9px] uppercase font-bold text-slate-400">Active Role</div>

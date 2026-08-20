@@ -92,10 +92,10 @@ export default function HeaderBar() {
   const avatar = userProfile?.avatarUrl || '👤';
   const isLight = theme === 'light';
   const shell = isLight
-    ? 'border-[#C8C1B3] bg-[#E2DDD4]/95 text-[#1E2421] shadow-[0_8px_24px_rgba(45,40,30,0.08)]'
+    ? 'border-[#DDD8D3] bg-[#F2F0EF]/95 text-[#1E2421] shadow-[0_8px_24px_rgba(40,35,30,0.06)]'
     : 'border-white/10 bg-[#171c1a] text-white shadow-[0_8px_24px_rgba(0,0,0,0.2)]';
   const buttonBase = isLight
-    ? 'border-[#C8C1B3] bg-[#ECE8E0] text-[#2C3B34] hover:bg-[#D6D0C3] hover:text-[#111A15]'
+    ? 'border-[#DDD8D3] bg-[#FAF9F8] text-[#2C3B34] hover:bg-[#E5E2DF] hover:text-[#111A15]'
     : 'border-white/10 bg-white/[0.08] text-slate-200 hover:bg-white/[0.12] hover:text-white';
   const iconButton = 'inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-semibold transition duration-200 hover:-translate-y-0.5';
 
@@ -106,7 +106,7 @@ export default function HeaderBar() {
           <div className="truncate text-[10px] font-black uppercase tracking-[0.3em] text-[#4E9D82]">
             Thambaravila Flora ERP Portal
           </div>
-          <div className={`mt-1 hidden text-xs font-medium sm:block ${isLight ? 'text-[#555E58]' : 'text-slate-400'}`}>
+          <div className={`mt-1 hidden text-xs font-medium sm:block ${isLight ? 'text-[#5A625D]' : 'text-slate-400'}`}>
             {roleName} workspace
           </div>
         </div>

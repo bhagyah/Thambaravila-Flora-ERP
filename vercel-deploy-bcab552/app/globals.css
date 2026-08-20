@@ -129,15 +129,15 @@ body {
     background:
       radial-gradient(circle at 18% 16%, rgba(107, 175, 145, 0.08) 0%, transparent 28%),
       radial-gradient(circle at 86% 12%, rgba(78, 157, 130, 0.05) 0%, transparent 24%),
-      linear-gradient(180deg, rgba(238, 234, 226, 0.90) 0%, rgba(230, 225, 216, 0.75) 48%, rgba(238, 234, 226, 0.45) 100%);
+      linear-gradient(180deg, rgba(242, 240, 239, 0.90) 0%, rgba(235, 232, 229, 0.75) 48%, rgba(242, 240, 239, 0.45) 100%);
   }
 
   html.light .app-shell-floral {
-    opacity: 0.14;
+    opacity: 0.15;
     mix-blend-mode: normal;
   }
 
-  /* Outer Cards & Section Containers (Eye-Protecting Warm Almond #E2DDD4) */
+  /* Outer Cards & Section Containers (#F2F0EF) */
   html.light .dashboard-shell .bg-flora-dark,
   html.light .dashboard-shell .bg-flora-dark\/90,
   html.light .dashboard-shell .bg-flora-dark\/95,
@@ -159,14 +159,14 @@ body {
   html.light .dashboard-shell .bg-slate-700,
   html.light .dashboard-shell .bg-gray-900,
   html.light .dashboard-shell .bg-gray-800 {
-    background-color: #E2DDD4 !important;
+    background-color: #F2F0EF !important;
     background-image: none !important;
-    border-color: #C8C1B3 !important;
-    box-shadow: 0 4px 16px -2px rgba(45, 40, 30, 0.07) !important;
+    border-color: #DDD8D3 !important;
+    box-shadow: 0 4px 16px -2px rgba(40, 35, 30, 0.05) !important;
     color: #1E2421 !important;
   }
 
-  /* Inner Wells, Filter Bars & Sub-boxes (Warm Taupe/Sand #D6D0C3) */
+  /* Inner Wells, Filter Bars & Sub-boxes (#E5E2DF) */
   html.light .dashboard-shell .bg-flora-darker,
   html.light .dashboard-shell .bg-flora-darker\/60,
   html.light .dashboard-shell .bg-flora-darker\/80,
@@ -179,17 +179,17 @@ body {
   html.light .dashboard-shell [class*="bg-amber-400/"],
   html.light .dashboard-shell [class*="bg-emerald-400/"],
   html.light .dashboard-shell [class*="bg-rose-400/"] {
-    background-color: #D6D0C3 !important;
+    background-color: #E5E2DF !important;
     background-image: none !important;
-    border-color: #C8C1B3 !important;
+    border-color: #DDD8D3 !important;
     color: #1E2421 !important;
   }
 
-  /* Sub-cards, Action Buttons & Badges (Warm Cream #ECE8E0) */
+  /* Sub-cards, Action Buttons & Badges (#FAF9F8) */
   html.light .dashboard-shell .bg-flora-card {
-    background-color: #ECE8E0 !important;
+    background-color: #FAF9F8 !important;
     background-image: none !important;
-    border-color: #C8C1B3 !important;
+    border-color: #DDD8D3 !important;
     color: #1E2421 !important;
   }
 
@@ -199,7 +199,7 @@ body {
   html.light .dashboard-shell .from-flora-dark,
   html.light .dashboard-shell .via-flora-card,
   html.light .dashboard-shell .to-flora-darker {
-    background-color: #E2DDD4 !important;
+    background-color: #F2F0EF !important;
     background-image: none !important;
   }
 
@@ -218,10 +218,10 @@ body {
   html.light .dashboard-shell .text-slate-400,
   html.light .dashboard-shell .text-slate-500,
   html.light .dashboard-shell .text-slate-600 {
-    color: #555E58 !important;
+    color: #5A625D !important;
   }
 
-  /* Stat Accent Colors (Readable Deep Tones on Light Warm Background) */
+  /* Stat Accent Colors (Readable Deep Tones on #F2F0EF Background) */
   html.light .dashboard-shell .text-emerald-300,
   html.light .dashboard-shell .text-emerald-200 {
     color: #166534 !important;
@@ -250,7 +250,7 @@ body {
   html.light .dashboard-shell [class*="border-amber-400/"],
   html.light .dashboard-shell [class*="border-emerald-400/"],
   html.light .dashboard-shell [class*="border-rose-400/"] {
-    border-color: #C8C1B3 !important;
+    border-color: #DDD8D3 !important;
   }
 }
 
@@ -267,27 +267,27 @@ body {
   }
 }
 
-/* Light Theme Overrides - Eye-Protecting Warm Almond & Linen Palette */
+/* Light Theme Overrides - #F2F0EF Soft Warm Alabaster Palette */
 html.light, body.light {
-  --flora-dark: #E2DDD4;
-  --flora-darker: #D6D0C3;
-  --flora-card: #ECE8E0;
-  --flora-border: #C8C1B3;
+  --flora-dark: #F2F0EF;
+  --flora-darker: #E5E2DF;
+  --flora-card: #FAF9F8;
+  --flora-border: #DDD8D3;
   --flora-text: #1E2421;
   color-scheme: light;
   color: #1E2421 !important;
-  background-color: #ECE8E1 !important;
+  background-color: #F6F4F3 !important;
   background-image: 
     radial-gradient(circle at 90% 10%, rgba(107, 175, 145, 0.08) 0%, transparent 40%),
     radial-gradient(circle at 10% 90%, rgba(78, 157, 130, 0.05) 0%, transparent 50%),
-    linear-gradient(180deg, #EFEBE4 0%, #E5E0D7 100%) !important;
+    linear-gradient(180deg, #F8F7F6 0%, #EFECE9 100%) !important;
 }
 
 body.light {
   background-image:
     radial-gradient(circle at 14% 12%, rgba(107, 175, 145, 0.08) 0%, transparent 30%),
     radial-gradient(circle at 82% 8%, rgba(78, 157, 130, 0.05) 0%, transparent 24%),
-    linear-gradient(180deg, #EFEBE4 0%, #E5E0D7 100%) !important;
+    linear-gradient(180deg, #F8F7F6 0%, #EFECE9 100%) !important;
 }
 
 ::selection {
@@ -299,19 +299,19 @@ body.light {
 html.light .bg-flora-dark,
 html.light .bg-flora-dark\/90,
 html.light .bg-flora-dark\/95 {
-  background-color: #E2DDD4 !important;
+  background-color: #F2F0EF !important;
   color: #1E2421 !important;
 }
 
 html.light .bg-flora-darker,
 html.light .bg-flora-darker\/60,
 html.light .bg-flora-darker\/80 {
-  background-color: #D6D0C3 !important;
+  background-color: #E5E2DF !important;
   color: #1E2421 !important;
 }
 
 html.light .bg-flora-card {
-  background-color: #ECE8E0 !important;
+  background-color: #FAF9F8 !important;
   color: #1E2421 !important;
 }
 
@@ -330,7 +330,7 @@ html.light .bg-slate-800\/80,
 html.light .bg-slate-800\/70,
 html.light .bg-gray-900,
 html.light .bg-gray-800 {
-  background-color: #E2DDD4 !important;
+  background-color: #F2F0EF !important;
   color: #1E2421 !important;
 }
 
@@ -341,7 +341,7 @@ html.light .border-slate-800\/80,
 html.light .border-slate-800\/70,
 html.light .border-slate-700,
 html.light .border-slate-700 {
-  border-color: #C8C1B3 !important;
+  border-color: #DDD8D3 !important;
 }
 
 html.light .text-slate-100,
@@ -351,24 +351,24 @@ html.light .text-slate-300 {
 }
 
 html.light .text-slate-400 {
-  color: #555E58 !important;
+  color: #5A625D !important;
 }
 
 html.light .text-slate-500 {
-  color: #555E58 !important;
+  color: #5A625D !important;
 }
 
 html.light .text-slate-600 {
-  color: #555E58 !important;
+  color: #5A625D !important;
 }
 
 html.light .dashboard-shell svg text,
 html.light .dashboard-shell svg tspan {
-  fill: #555E58 !important;
+  fill: #5A625D !important;
 }
 
 html.light .dashboard-shell svg line {
-  stroke: #C8C1B3 !important;
+  stroke: #DDD8D3 !important;
 }
 
 /* Custom Scrollbars */

@@ -50,16 +50,16 @@ export default function DonutGaugeChart({
   const circumference = 2 * Math.PI * radius;
 
   const shell = isLight
-    ? 'border-[#C8C1B3] bg-[#E2DDD4] text-[#1E2421] shadow-[0_4px_16px_rgba(45,40,30,0.06)]'
+    ? 'border-[#DDD8D3] bg-[#F2F0EF] text-[#1E2421] shadow-[0_4px_16px_rgba(40,35,30,0.04)]'
     : 'border-white/10 bg-[#171c1a]/78 text-white shadow-[0_18px_40px_rgba(0,0,0,0.22)]';
   const titleClass = isLight ? 'text-[#1E2421]' : 'text-white';
-  const subtitleClass = isLight ? 'text-[#555E58]' : 'text-slate-400';
-  const trackColor = isLight ? '#C8C1B3' : 'var(--flora-border)';
+  const subtitleClass = isLight ? 'text-[#5A625D]' : 'text-slate-400';
+  const trackColor = isLight ? '#DDD8D3' : 'var(--flora-border)';
 
   return (
     <div className={`rounded-2xl p-4 flex h-full w-full flex-col justify-between space-y-3 border ${shell}`}>
       {/* Title */}
-      <div className={`border-b pb-2 ${isLight ? 'border-[#C8C1B3]' : 'border-white/10'}`}>
+      <div className={`border-b pb-2 ${isLight ? 'border-[#DDD8D3]' : 'border-white/10'}`}>
         <h3 className={`flex items-center space-x-2 text-sm font-bold ${titleClass}`}>
           <span>🎯</span>
           <span>{title}</span>
@@ -112,7 +112,7 @@ export default function DonutGaugeChart({
               {centerLabel || `${Math.round((chartSegments[0]?.value / totalValue) * 100)}%`}
             </div>
             {centerSublabel && (
-              <div className={`text-[9px] font-semibold uppercase tracking-wider ${isLight ? 'text-[#555E58]' : 'text-slate-400'}`}>
+              <div className={`text-[9px] font-semibold uppercase tracking-wider ${isLight ? 'text-[#5A625D]' : 'text-slate-400'}`}>
                 {centerSublabel}
               </div>
             )}
@@ -126,7 +126,7 @@ export default function DonutGaugeChart({
             return (
               <div
                 key={idx}
-                className={`flex items-center justify-between rounded-xl border p-2 shadow-sm ${isLight ? 'border-[#C8C1B3] bg-[#D6D0C3]' : 'border-white/10 bg-white/[0.06]'}`}
+                className={`flex items-center justify-between rounded-xl border p-2 shadow-sm ${isLight ? 'border-[#DDD8D3] bg-[#E5E2DF]' : 'border-white/10 bg-white/[0.06]'}`}
               >
                 <div className="flex items-center space-x-2 truncate">
                   <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: seg.color }}></span>
@@ -134,7 +134,7 @@ export default function DonutGaugeChart({
                 </div>
                 <div className="flex items-center space-x-1.5 flex-shrink-0">
                   <span className={`text-[11px] font-extrabold ${isLight ? 'text-[#1E2421]' : 'text-white'}`}>{seg.value.toLocaleString()}</span>
-                  <span className={`rounded border px-1.5 py-0.5 text-[9px] font-bold ${isLight ? 'border-[#C8C1B3] bg-[#ECE8E0] text-[#1E7045]' : 'border-white/10 bg-white/[0.06] text-flora-sage'}`}>
+                  <span className={`rounded border px-1.5 py-0.5 text-[9px] font-bold ${isLight ? 'border-[#DDD8D3] bg-[#FAF9F8] text-[#1E7045]' : 'border-white/10 bg-white/[0.06] text-flora-sage'}`}>
                     {pct}%
                   </span>
                 </div>
