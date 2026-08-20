@@ -12,56 +12,76 @@ import { useTheme } from '../context/ThemeContext';
 
 type Accent = 'sage' | 'green' | 'teal' | 'amber' | 'violet' | 'rose' | 'sky' | 'slate';
 
-const accentStyles: Record<Accent, { chip: string; active: string; rail: string }> = {
+const accentStyles: Record<Accent, { chip: string; chipLight: string; active: string; activeLight: string; rail: string }> = {
   sage: {
     chip: 'border-[#6BAF91]/35 bg-[#6BAF91]/12 text-[#bfe9d8]',
+    chipLight: 'border-[#4E9D82]/40 bg-[#4E9D82]/15 text-[#1E7045]',
     active: 'border-[#6BAF91]/35 bg-[#6BAF91]/14 text-white',
+    activeLight: 'border-[#4E9D82]/50 bg-[#4E9D82]/20 text-[#155734]',
     rail: 'bg-[#6BAF91]',
   },
   green: {
     chip: 'border-[#4E9D82]/35 bg-[#4E9D82]/12 text-[#bce7d6]',
+    chipLight: 'border-[#4E9D82]/40 bg-[#4E9D82]/15 text-[#1E7045]',
     active: 'border-[#4E9D82]/35 bg-[#4E9D82]/14 text-white',
+    activeLight: 'border-[#4E9D82]/50 bg-[#4E9D82]/20 text-[#155734]',
     rail: 'bg-[#4E9D82]',
   },
   teal: {
     chip: 'border-cyan-400/30 bg-cyan-400/10 text-cyan-100',
+    chipLight: 'border-teal-500/40 bg-teal-500/15 text-teal-800',
     active: 'border-cyan-400/30 bg-cyan-400/12 text-white',
+    activeLight: 'border-teal-600/50 bg-teal-500/20 text-teal-900',
     rail: 'bg-cyan-400',
   },
   amber: {
     chip: 'border-amber-400/30 bg-amber-400/10 text-amber-100',
+    chipLight: 'border-amber-500/40 bg-amber-500/15 text-amber-900',
     active: 'border-amber-400/30 bg-amber-400/12 text-white',
+    activeLight: 'border-amber-600/50 bg-amber-500/20 text-amber-950',
     rail: 'bg-amber-400',
   },
   violet: {
     chip: 'border-violet-400/30 bg-violet-400/10 text-violet-100',
+    chipLight: 'border-purple-500/40 bg-purple-500/15 text-purple-900',
     active: 'border-violet-400/30 bg-violet-400/12 text-white',
+    activeLight: 'border-purple-600/50 bg-purple-500/20 text-purple-950',
     rail: 'bg-violet-400',
   },
   rose: {
     chip: 'border-rose-400/30 bg-rose-400/10 text-rose-100',
+    chipLight: 'border-rose-500/40 bg-rose-500/15 text-rose-900',
     active: 'border-rose-400/30 bg-rose-400/12 text-white',
+    activeLight: 'border-rose-600/50 bg-rose-500/20 text-rose-950',
     rail: 'bg-rose-400',
   },
   sky: {
     chip: 'border-sky-400/30 bg-sky-400/10 text-sky-100',
+    chipLight: 'border-sky-500/40 bg-sky-500/15 text-sky-900',
     active: 'border-sky-400/30 bg-sky-400/12 text-white',
+    activeLight: 'border-sky-600/50 bg-sky-500/20 text-sky-950',
     rail: 'bg-sky-400',
   },
   slate: {
     chip: 'border-white/[0.15] bg-white/[0.08] text-slate-100',
+    chipLight: 'border-[#DDD8D3] bg-[#E5E2DF] text-[#1E2421]',
     active: 'border-white/[0.20] bg-white/[0.12] text-white',
+    activeLight: 'border-[#DDD8D3] bg-[#FAF9F8] text-[#1E2421]',
     rail: 'bg-white/70',
   },
 };
 
-function MenuBadge({ abbr, accent, active = false }: { abbr: string; accent: Accent; active?: boolean }) {
+function MenuBadge({ abbr, accent, active = false, isLight = false }: { abbr: string; accent: Accent; active?: boolean; isLight?: boolean }) {
   const styles = accentStyles[accent];
+  const chipStyle = isLight
+    ? active ? styles.activeLight : styles.chipLight
+    : active ? styles.active : styles.chip;
+
   return (
     <span
       className={[
-        'flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border text-[9px] font-black tracking-[0.14em] shadow-sm',
-        active ? styles.active : styles.chip,
+        'flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[8.5px] font-black tracking-[0.1em] shadow-sm',
+        chipStyle,
       ].join(' ')}
     >
       {abbr}
@@ -75,6 +95,7 @@ function SidebarNavItem({
   abbr,
   accent,
   active,
+  isLight,
   onClick,
 }: {
   href: string;
@@ -82,6 +103,7 @@ function SidebarNavItem({
   abbr: string;
   accent: Accent;
   active: boolean;
+  isLight: boolean;
   onClick?: () => void;
 }) {
   const styles = accentStyles[accent];
@@ -91,19 +113,23 @@ function SidebarNavItem({
       href={href}
       onClick={onClick}
       className={[
-        'group relative flex h-8 items-center gap-2.5 rounded-xl border px-2.5 py-1 text-xs font-semibold transition-all duration-200',
-        active
+        'group relative flex h-7 items-center gap-2 rounded-lg border px-2 py-0.5 text-[11.5px] font-semibold transition-all duration-150',
+        isLight
+          ? active
+            ? 'border-[#DDD8D3] bg-[#FAF9F8] text-[#1E2421] shadow-sm ring-1 ring-black/5'
+            : 'border-transparent text-[#3B443F] hover:border-[#DDD8D3] hover:bg-[#E5E2DF] hover:text-[#111A15]'
+          : active
           ? `${styles.active} shadow-[0_10px_24px_rgba(0,0,0,0.12)] ring-1 ring-white/10`
           : 'border-transparent text-slate-300 hover:border-white/10 hover:bg-white/[0.07] hover:text-white',
       ].join(' ')}
     >
       <span
         className={[
-          'absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r-full transition-opacity',
+          'absolute left-0 top-1 bottom-1 w-0.5 rounded-r-full transition-opacity',
           active ? styles.rail : 'opacity-0 group-hover:opacity-80',
         ].join(' ')}
       />
-      <MenuBadge abbr={abbr} accent={accent} active={active} />
+      <MenuBadge abbr={abbr} accent={accent} active={active} isLight={isLight} />
       <span className="min-w-0 flex-1 truncate">{label}</span>
     </Link>
   );
@@ -113,11 +139,13 @@ function SidebarSubItem({
   href,
   label,
   active,
+  isLight,
   onClick,
 }: {
   href: string;
   label: string;
   active: boolean;
+  isLight: boolean;
   onClick?: () => void;
 }) {
   return (
@@ -125,8 +153,12 @@ function SidebarSubItem({
       href={href}
       onClick={onClick}
       className={[
-        'flex h-7 items-center gap-1.5 rounded-lg border px-2.5 py-0.5 text-[11px] font-medium transition-all duration-200',
-        active
+        'flex h-6 items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10.5px] font-medium transition-all duration-150',
+        isLight
+          ? active
+            ? 'border-[#DDD8D3] bg-[#FAF9F8] text-[#1E2421]'
+            : 'border-transparent text-[#5A625D] hover:border-[#DDD8D3] hover:bg-[#E5E2DF] hover:text-[#1E2421]'
+          : active
           ? 'border-white/[0.15] bg-white/10 text-white'
           : 'border-transparent text-slate-400 hover:border-white/10 hover:bg-white/[0.07] hover:text-slate-100',
       ].join(' ')}
@@ -137,9 +169,9 @@ function SidebarSubItem({
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function SectionLabel({ children, isLight }: { children: React.ReactNode; isLight: boolean }) {
   return (
-    <div className="px-2 pt-1.5 pb-0.5 text-[9px] font-black uppercase tracking-[0.22em] text-slate-400/80">
+    <div className={`px-2 pt-1 pb-0.5 text-[8.5px] font-black uppercase tracking-[0.22em] ${isLight ? 'text-[#5A625D]' : 'text-slate-400/80'}`}>
       {children}
     </div>
   );
@@ -228,10 +260,10 @@ export default function Sidebar() {
 
   return (
     <>
-      <div className={`fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b px-3 py-2.5 sm:px-4 lg:hidden ${mobileShell}`}>
+      <div className={`fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b px-3 py-2 sm:px-4 lg:hidden ${mobileShell}`}>
         <Link href="/dashboard" className="flex min-w-0 flex-1 items-center gap-2">
-          <div className={`relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg border shadow-sm ${isLight ? 'border-[#DDD8D3] bg-[#FAF9F8]' : 'border-white/10 bg-white/[0.08]'}`}>
-            <Image src="/logo.png" alt="Thambaravila Flora" width={24} height={24} className="scale-[2.0] object-contain object-center" />
+          <div className={`relative flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg border shadow-sm ${isLight ? 'border-[#DDD8D3] bg-[#FAF9F8]' : 'border-white/10 bg-white/[0.08]'}`}>
+            <Image src="/logo.png" alt="Thambaravila Flora" width={22} height={22} className="scale-[2.0] object-contain object-center" />
           </div>
           <div className="min-w-0">
             <div className={`truncate text-xs font-black tracking-[0.16em] ${textStrong}`}>THAMBARAVILA</div>
@@ -243,19 +275,19 @@ export default function Sidebar() {
           <NotificationCenter />
           <button
             onClick={() => setMobileOpen((value) => !value)}
-            className={`grid h-9 w-9 place-items-center rounded-lg border ${isLight ? 'border-[#DDD8D3] bg-[#FAF9F8] text-[#1E2421]' : 'border-white/10 bg-white/[0.08] text-slate-100'}`}
+            className={`grid h-8 w-8 place-items-center rounded-lg border ${isLight ? 'border-[#DDD8D3] bg-[#FAF9F8] text-[#1E2421]' : 'border-white/10 bg-white/[0.08] text-slate-100'}`}
             aria-label="Toggle navigation"
           >
             {mobileOpen ? (
-              <span className="relative block h-3.5 w-3.5">
-                <span className="absolute left-0 top-1/2 h-0.5 w-3.5 -translate-y-1/2 rotate-45 rounded-full bg-current" />
-                <span className="absolute left-0 top-1/2 h-0.5 w-3.5 -translate-y-1/2 -rotate-45 rounded-full bg-current" />
+              <span className="relative block h-3 w-3">
+                <span className="absolute left-0 top-1/2 h-0.5 w-3 -translate-y-1/2 rotate-45 rounded-full bg-current" />
+                <span className="absolute left-0 top-1/2 h-0.5 w-3 -translate-y-1/2 -rotate-45 rounded-full bg-current" />
               </span>
             ) : (
               <span className="flex flex-col gap-0.5">
-                <span className="block h-0.5 w-3.5 rounded-full bg-current" />
-                <span className="block h-0.5 w-3.5 rounded-full bg-current" />
-                <span className="block h-0.5 w-3.5 rounded-full bg-current" />
+                <span className="block h-0.5 w-3 rounded-full bg-current" />
+                <span className="block h-0.5 w-3 rounded-full bg-current" />
+                <span className="block h-0.5 w-3 rounded-full bg-current" />
               </span>
             )}
           </button>
@@ -273,21 +305,21 @@ export default function Sidebar() {
       >
         <div className="flex h-full flex-col overflow-y-auto">
           {/* Compact Brand Header */}
-          <div className={`border-b px-3.5 py-3 ${isLight ? 'border-[#DDD8D3] bg-[#ECE9E6]' : 'border-white/10 bg-white/5'}`}>
-            <Link href="/dashboard" className="flex items-center gap-2.5">
-              <div className={`relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl border shadow-sm ${isLight ? 'border-[#DDD8D3] bg-[#FAF9F8]' : 'border-white/10 bg-white/[0.08]'}`}>
-                <Image src="/logo.png" alt="Thambaravila Flora" width={32} height={32} className="scale-[2.0] object-contain object-center" />
+          <div className={`border-b px-3 py-2.5 ${isLight ? 'border-[#DDD8D3] bg-[#ECE9E6]' : 'border-white/10 bg-white/5'}`}>
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <div className={`relative flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg border shadow-sm ${isLight ? 'border-[#DDD8D3] bg-[#FAF9F8]' : 'border-white/10 bg-white/[0.08]'}`}>
+                <Image src="/logo.png" alt="Thambaravila Flora" width={28} height={28} className="scale-[2.0] object-contain object-center" />
               </div>
               <div className="min-w-0">
-                <div className={`truncate text-xs font-black tracking-[0.18em] ${textStrong}`}>THAMBARAVILA</div>
-                <div className="truncate text-[9px] font-semibold tracking-[0.2em] text-[#4E9D82]">FLORA ERP PORTAL</div>
+                <div className={`truncate text-xs font-black tracking-[0.16em] ${textStrong}`}>THAMBARAVILA</div>
+                <div className="truncate text-[8.5px] font-semibold tracking-[0.2em] text-[#4E9D82]">FLORA ERP PORTAL</div>
               </div>
             </Link>
           </div>
 
-          <nav className="flex-1 space-y-1.5 p-2.5 text-xs">
-            <SectionLabel>Main Modules</SectionLabel>
-            <div className="space-y-1">
+          <nav className="flex-1 space-y-1 p-2 text-xs">
+            <SectionLabel isLight={isLight}>Main Modules</SectionLabel>
+            <div className="space-y-0.5">
               {coreLinks.map((item) => (
                 <SidebarNavItem
                   key={item.href}
@@ -296,70 +328,79 @@ export default function Sidebar() {
                   abbr={item.abbr}
                   accent={item.accent}
                   active={item.active}
+                  isLight={isLight}
                   onClick={() => setMobileOpen(false)}
                 />
               ))}
             </div>
 
             {(hasPerm('view_financial_dashboard') || isAccountant) && (
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 <button
                   onClick={() => setAccountsOpen((value) => !value)}
                   className={[
-                    'group relative flex h-8 w-full items-center gap-2.5 rounded-xl border px-2.5 py-1 text-left text-xs font-semibold transition-all duration-200',
-                    isActive('/accountant')
+                    'group relative flex h-7 w-full items-center gap-2 rounded-lg border px-2 py-0.5 text-left text-[11.5px] font-semibold transition-all duration-150',
+                    isLight
+                      ? isActive('/accountant')
+                        ? 'border-[#4E9D82]/50 bg-[#4E9D82]/20 text-[#155734] shadow-sm'
+                        : 'border-transparent text-[#3B443F] hover:border-[#DDD8D3] hover:bg-[#E5E2DF] hover:text-[#111A15]'
+                      : isActive('/accountant')
                       ? 'border-[#6BAF91]/30 bg-[#6BAF91]/14 text-white shadow-[0_10px_24px_rgba(0,0,0,0.14)]'
                       : 'border-transparent text-slate-300 hover:border-white/10 hover:bg-white/[0.07] hover:text-white',
                   ].join(' ')}
                 >
                   <span
                     className={[
-                      'absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r-full',
+                      'absolute left-0 top-1 bottom-1 w-0.5 rounded-r-full',
                       isActive('/accountant') ? 'bg-[#6BAF91]' : 'bg-[#6BAF91]/50 opacity-0 group-hover:opacity-80',
                     ].join(' ')}
                   />
-                  <MenuBadge abbr="AC" accent="sage" active={isActive('/accountant')} />
+                  <MenuBadge abbr="AC" accent="sage" active={isActive('/accountant')} isLight={isLight} />
                   <span className="min-w-0 flex-1 truncate">Accounts &amp; Finance</span>
-                  <span className="text-[9px] font-black tracking-[0.2em] text-slate-500">{accountsOpen ? 'UP' : 'DN'}</span>
+                  <span className="text-[8.5px] font-black tracking-[0.16em] text-slate-500">{accountsOpen ? '▲' : '▼'}</span>
                 </button>
 
                 {(accountsOpen || isActive('/accountant')) && (
-                  <div className="space-y-1 border-l border-white/10 pl-3 my-1">
-                    <SidebarSubItem href="/accountant/dues" label="Payment Dues" active={isActive('/accountant/dues')} onClick={() => setMobileOpen(false)} />
-                    {isAccountant && <SidebarSubItem href="/accountant/liabilities" label="Scheduled Liabilities" active={isActive('/accountant/liabilities')} onClick={() => setMobileOpen(false)} />}
-                    {isAccountant && <SidebarSubItem href="/accountant/cashflow-history" label="Payments & Receivables" active={isActive('/accountant/cashflow-history')} onClick={() => setMobileOpen(false)} />}
-                    <SidebarSubItem href="/accountant/financials" label="Financial Summary" active={isActive('/accountant/financials')} onClick={() => setMobileOpen(false)} />
-                    <SidebarSubItem href="/accountant/reports" label="P&amp;L Reports" active={isActive('/accountant/reports')} onClick={() => setMobileOpen(false)} />
+                  <div className={`space-y-0.5 border-l pl-2.5 my-0.5 ${isLight ? 'border-[#DDD8D3]' : 'border-white/10'}`}>
+                    <SidebarSubItem href="/accountant/dues" label="Payment Dues" active={isActive('/accountant/dues')} isLight={isLight} onClick={() => setMobileOpen(false)} />
+                    {isAccountant && <SidebarSubItem href="/accountant/liabilities" label="Scheduled Liabilities" active={isActive('/accountant/liabilities')} isLight={isLight} onClick={() => setMobileOpen(false)} />}
+                    {isAccountant && <SidebarSubItem href="/accountant/cashflow-history" label="Payments & Receivables" active={isActive('/accountant/cashflow-history')} isLight={isLight} onClick={() => setMobileOpen(false)} />}
+                    <SidebarSubItem href="/accountant/financials" label="Financial Summary" active={isActive('/accountant/financials')} isLight={isLight} onClick={() => setMobileOpen(false)} />
+                    <SidebarSubItem href="/accountant/reports" label="P&amp;L Reports" active={isActive('/accountant/reports')} isLight={isLight} onClick={() => setMobileOpen(false)} />
                   </div>
                 )}
               </div>
             )}
 
             {isSales && (
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 <button
                   onClick={() => setSalesOpen((value) => !value)}
                   className={[
-                    'group relative flex h-8 w-full items-center gap-2.5 rounded-xl border px-2.5 py-1 text-left text-xs font-semibold transition-all duration-200',
-                    isActive('/sales')
+                    'group relative flex h-7 w-full items-center gap-2 rounded-lg border px-2 py-0.5 text-left text-[11.5px] font-semibold transition-all duration-150',
+                    isLight
+                      ? isActive('/sales')
+                        ? 'border-[#4E9D82]/50 bg-[#4E9D82]/20 text-[#155734] shadow-sm'
+                        : 'border-transparent text-[#3B443F] hover:border-[#DDD8D3] hover:bg-[#E5E2DF] hover:text-[#111A15]'
+                      : isActive('/sales')
                       ? 'border-[#4E9D82]/30 bg-[#4E9D82]/14 text-white shadow-[0_10px_24px_rgba(0,0,0,0.14)]'
                       : 'border-transparent text-slate-300 hover:border-white/10 hover:bg-white/[0.07] hover:text-white',
                   ].join(' ')}
                 >
                   <span
                     className={[
-                      'absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r-full',
+                      'absolute left-0 top-1 bottom-1 w-0.5 rounded-r-full',
                       isActive('/sales') ? 'bg-[#4E9D82]' : 'bg-[#4E9D82]/50 opacity-0 group-hover:opacity-80',
                     ].join(' ')}
                   />
-                  <MenuBadge abbr="SL" accent="green" active={isActive('/sales')} />
+                  <MenuBadge abbr="SL" accent="green" active={isActive('/sales')} isLight={isLight} />
                   <span className="min-w-0 flex-1 truncate">Sales Management</span>
-                  <span className="text-[9px] font-black tracking-[0.2em] text-slate-500">{salesOpen ? 'UP' : 'DN'}</span>
+                  <span className="text-[8.5px] font-black tracking-[0.16em] text-slate-500">{salesOpen ? '▲' : '▼'}</span>
                 </button>
 
                 {(salesOpen || isActive('/sales')) && (
-                  <div className="space-y-1 border-l border-white/10 pl-3 my-1">
-                    <SidebarSubItem href="/sales/analytics" label="Pattern Analytics" active={isActive('/sales/analytics')} onClick={() => setMobileOpen(false)} />
+                  <div className={`space-y-0.5 border-l pl-2.5 my-0.5 ${isLight ? 'border-[#DDD8D3]' : 'border-white/10'}`}>
+                    <SidebarSubItem href="/sales/analytics" label="Pattern Analytics" active={isActive('/sales/analytics')} isLight={isLight} onClick={() => setMobileOpen(false)} />
                   </div>
                 )}
               </div>
@@ -372,6 +413,7 @@ export default function Sidebar() {
                 abbr="EV"
                 accent="amber"
                 active={isActive('/coordinator')}
+                isLight={isLight}
                 onClick={() => setMobileOpen(false)}
               />
             )}
@@ -383,6 +425,7 @@ export default function Sidebar() {
                 abbr="DS"
                 accent="rose"
                 active={isActive('/designer')}
+                isLight={isLight}
                 onClick={() => setMobileOpen(false)}
               />
             )}
@@ -394,6 +437,7 @@ export default function Sidebar() {
                 abbr="SM"
                 accent="violet"
                 active={isActive('/social')}
+                isLight={isLight}
                 onClick={() => setMobileOpen(false)}
               />
             )}
@@ -405,47 +449,52 @@ export default function Sidebar() {
                 abbr="OW"
                 accent="sage"
                 active={isActive('/owner/dashboard')}
+                isLight={isLight}
                 onClick={() => setMobileOpen(false)}
               />
             )}
 
             {(isIT || isOwner) && (
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 <button
                   onClick={() => setAdminOpen((value) => !value)}
                   className={[
-                    'group relative flex h-8 w-full items-center gap-2.5 rounded-xl border px-2.5 py-1 text-left text-xs font-semibold transition-all duration-200',
-                    isActive('/admin')
+                    'group relative flex h-7 w-full items-center gap-2 rounded-lg border px-2 py-0.5 text-left text-[11.5px] font-semibold transition-all duration-150',
+                    isLight
+                      ? isActive('/admin')
+                        ? 'border-purple-600/50 bg-purple-500/20 text-purple-950 shadow-sm'
+                        : 'border-transparent text-[#3B443F] hover:border-[#DDD8D3] hover:bg-[#E5E2DF] hover:text-[#111A15]'
+                      : isActive('/admin')
                       ? 'border-violet-400/30 bg-violet-400/14 text-white shadow-[0_10px_24px_rgba(0,0,0,0.14)]'
                       : 'border-transparent text-slate-300 hover:border-white/10 hover:bg-white/[0.07] hover:text-white',
                   ].join(' ')}
                 >
                   <span
                     className={[
-                      'absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r-full',
+                      'absolute left-0 top-1 bottom-1 w-0.5 rounded-r-full',
                       isActive('/admin') ? 'bg-violet-400' : 'bg-violet-400/50 opacity-0 group-hover:opacity-80',
                     ].join(' ')}
                   />
-                  <MenuBadge abbr="AD" accent="violet" active={isActive('/admin')} />
+                  <MenuBadge abbr="AD" accent="violet" active={isActive('/admin')} isLight={isLight} />
                   <span className="min-w-0 flex-1 truncate">Admin Control</span>
-                  <span className="text-[9px] font-black tracking-[0.2em] text-slate-500">{adminOpen ? 'UP' : 'DN'}</span>
+                  <span className="text-[8.5px] font-black tracking-[0.16em] text-slate-500">{adminOpen ? '▲' : '▼'}</span>
                 </button>
 
                 {(adminOpen || isActive('/admin')) && (
-                  <div className="space-y-1 border-l border-white/10 pl-3 my-1">
-                    <SidebarSubItem href="/admin/users" label="User Management" active={isActive('/admin/users')} onClick={() => setMobileOpen(false)} />
-                    <SidebarSubItem href="/admin/config" label="System Config" active={isActive('/admin/config')} onClick={() => setMobileOpen(false)} />
-                    <SidebarSubItem href="/admin/audit-logs" label="Audit Logs" active={isActive('/admin/audit-logs')} onClick={() => setMobileOpen(false)} />
-                    <SidebarSubItem href="/admin/login-security" label="Login Security" active={isActive('/admin/login-security')} onClick={() => setMobileOpen(false)} />
-                    <SidebarSubItem href="/admin/backups" label="Database Backups" active={isActive('/admin/backups')} onClick={() => setMobileOpen(false)} />
-                    <SidebarSubItem href="/admin/geofences" label="Geofence Zones" active={isActive('/admin/geofences')} onClick={() => setMobileOpen(false)} />
+                  <div className={`space-y-0.5 border-l pl-2.5 my-0.5 ${isLight ? 'border-[#DDD8D3]' : 'border-white/10'}`}>
+                    <SidebarSubItem href="/admin/users" label="User Management" active={isActive('/admin/users')} isLight={isLight} onClick={() => setMobileOpen(false)} />
+                    <SidebarSubItem href="/admin/config" label="System Config" active={isActive('/admin/config')} isLight={isLight} onClick={() => setMobileOpen(false)} />
+                    <SidebarSubItem href="/admin/audit-logs" label="Audit Logs" active={isActive('/admin/audit-logs')} isLight={isLight} onClick={() => setMobileOpen(false)} />
+                    <SidebarSubItem href="/admin/login-security" label="Login Security" active={isActive('/admin/login-security')} isLight={isLight} onClick={() => setMobileOpen(false)} />
+                    <SidebarSubItem href="/admin/backups" label="Database Backups" active={isActive('/admin/backups')} isLight={isLight} onClick={() => setMobileOpen(false)} />
+                    <SidebarSubItem href="/admin/geofences" label="Geofence Zones" active={isActive('/admin/geofences')} isLight={isLight} onClick={() => setMobileOpen(false)} />
                   </div>
                 )}
               </div>
             )}
 
-            <SectionLabel>Tools</SectionLabel>
-            <div className="space-y-1">
+            <SectionLabel isLight={isLight}>Tools</SectionLabel>
+            <div className="space-y-0.5">
               {toolLinks.map((item) => (
                 <SidebarNavItem
                   key={item.href}
@@ -454,6 +503,7 @@ export default function Sidebar() {
                   abbr={item.abbr}
                   accent={item.accent}
                   active={item.active}
+                  isLight={isLight}
                   onClick={() => setMobileOpen(false)}
                 />
               ))}
