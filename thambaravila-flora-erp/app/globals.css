@@ -127,17 +127,17 @@ body {
 
   html.light .app-shell-wash {
     background:
-      radial-gradient(circle at 18% 16%, rgba(107, 175, 145, 0.10) 0%, transparent 28%),
-      radial-gradient(circle at 86% 12%, rgba(78, 157, 130, 0.06) 0%, transparent 24%),
-      linear-gradient(180deg, rgba(247, 248, 245, 0.85) 0%, rgba(243, 245, 242, 0.65) 48%, rgba(247, 248, 245, 0.35) 100%);
+      radial-gradient(circle at 18% 16%, rgba(107, 175, 145, 0.08) 0%, transparent 28%),
+      radial-gradient(circle at 86% 12%, rgba(78, 157, 130, 0.05) 0%, transparent 24%),
+      linear-gradient(180deg, rgba(238, 234, 226, 0.90) 0%, rgba(230, 225, 216, 0.75) 48%, rgba(238, 234, 226, 0.45) 100%);
   }
 
   html.light .app-shell-floral {
-    opacity: 0.18;
+    opacity: 0.14;
     mix-blend-mode: normal;
   }
 
-  /* Outer Cards & Section Containers (Matching Sidebar #F7F8F5) */
+  /* Outer Cards & Section Containers (Eye-Protecting Warm Almond #E2DDD4) */
   html.light .dashboard-shell .bg-flora-dark,
   html.light .dashboard-shell .bg-flora-dark\/90,
   html.light .dashboard-shell .bg-flora-dark\/95,
@@ -159,14 +159,14 @@ body {
   html.light .dashboard-shell .bg-slate-700,
   html.light .dashboard-shell .bg-gray-900,
   html.light .dashboard-shell .bg-gray-800 {
-    background-color: #F7F8F5 !important;
+    background-color: #E2DDD4 !important;
     background-image: none !important;
-    border-color: #DCE4DF !important;
-    box-shadow: 0 6px 20px -2px rgba(35, 48, 41, 0.05) !important;
-    color: #18221D !important;
+    border-color: #C8C1B3 !important;
+    box-shadow: 0 4px 16px -2px rgba(45, 40, 30, 0.07) !important;
+    color: #1E2421 !important;
   }
 
-  /* Inner Wells, Filter Bars & Sub-boxes (Matching Sidebar Active Role Box #EBF0EA) */
+  /* Inner Wells, Filter Bars & Sub-boxes (Warm Taupe/Sand #D6D0C3) */
   html.light .dashboard-shell .bg-flora-darker,
   html.light .dashboard-shell .bg-flora-darker\/60,
   html.light .dashboard-shell .bg-flora-darker\/80,
@@ -179,18 +179,18 @@ body {
   html.light .dashboard-shell [class*="bg-amber-400/"],
   html.light .dashboard-shell [class*="bg-emerald-400/"],
   html.light .dashboard-shell [class*="bg-rose-400/"] {
-    background-color: #EBF0EA !important;
+    background-color: #D6D0C3 !important;
     background-image: none !important;
-    border-color: #DCE4DF !important;
-    color: #18221D !important;
+    border-color: #C8C1B3 !important;
+    color: #1E2421 !important;
   }
 
-  /* Sub-cards, Action Buttons & Badges (Matching Sidebar Buttons #FAFBF8) */
+  /* Sub-cards, Action Buttons & Badges (Warm Cream #ECE8E0) */
   html.light .dashboard-shell .bg-flora-card {
-    background-color: #FAFBF8 !important;
+    background-color: #ECE8E0 !important;
     background-image: none !important;
-    border-color: #DCE4DF !important;
-    color: #18221D !important;
+    border-color: #C8C1B3 !important;
+    color: #1E2421 !important;
   }
 
   /* Remove Card Pastel Gradients in Light Mode */
@@ -199,7 +199,7 @@ body {
   html.light .dashboard-shell .from-flora-dark,
   html.light .dashboard-shell .via-flora-card,
   html.light .dashboard-shell .to-flora-darker {
-    background-color: #F7F8F5 !important;
+    background-color: #E2DDD4 !important;
     background-image: none !important;
   }
 
@@ -212,19 +212,19 @@ body {
   html.light .dashboard-shell .text-slate-100,
   html.light .dashboard-shell .text-slate-200,
   html.light .dashboard-shell .text-slate-300 {
-    color: #18221D !important;
+    color: #1E2421 !important;
   }
 
   html.light .dashboard-shell .text-slate-400,
   html.light .dashboard-shell .text-slate-500,
   html.light .dashboard-shell .text-slate-600 {
-    color: #4A5B52 !important;
+    color: #555E58 !important;
   }
 
-  /* Stat Accent Colors (Readable Deep Tones on Light Background) */
+  /* Stat Accent Colors (Readable Deep Tones on Light Warm Background) */
   html.light .dashboard-shell .text-emerald-300,
   html.light .dashboard-shell .text-emerald-200 {
-    color: #15803d !important;
+    color: #166534 !important;
   }
   html.light .dashboard-shell .text-sky-300,
   html.light .dashboard-shell .text-sky-200 {
@@ -232,11 +232,11 @@ body {
   }
   html.light .dashboard-shell .text-amber-300,
   html.light .dashboard-shell .text-amber-200 {
-    color: #b45309 !important;
+    color: #92400e !important;
   }
   html.light .dashboard-shell .text-rose-300,
   html.light .dashboard-shell .text-rose-200 {
-    color: #be123c !important;
+    color: #9f1239 !important;
   }
 
   /* Universal Borders */
@@ -250,7 +250,7 @@ body {
   html.light .dashboard-shell [class*="border-amber-400/"],
   html.light .dashboard-shell [class*="border-emerald-400/"],
   html.light .dashboard-shell [class*="border-rose-400/"] {
-    border-color: #DCE4DF !important;
+    border-color: #C8C1B3 !important;
   }
 }
 
@@ -267,27 +267,27 @@ body {
   }
 }
 
-/* Light Theme Overrides - TrueTone Warm Palette Matching Sidebar */
+/* Light Theme Overrides - Eye-Protecting Warm Almond & Linen Palette */
 html.light, body.light {
-  --flora-dark: #F7F8F5;
-  --flora-darker: #EBF0EA;
-  --flora-card: #FAFBF8;
-  --flora-border: #DCE4DF;
-  --flora-text: #18221D;
+  --flora-dark: #E2DDD4;
+  --flora-darker: #D6D0C3;
+  --flora-card: #ECE8E0;
+  --flora-border: #C8C1B3;
+  --flora-text: #1E2421;
   color-scheme: light;
-  color: #18221D !important;
-  background-color: #F7F8F5 !important;
+  color: #1E2421 !important;
+  background-color: #ECE8E1 !important;
   background-image: 
     radial-gradient(circle at 90% 10%, rgba(107, 175, 145, 0.08) 0%, transparent 40%),
     radial-gradient(circle at 10% 90%, rgba(78, 157, 130, 0.05) 0%, transparent 50%),
-    linear-gradient(180deg, #FAFBF8 0%, #F3F5F2 100%) !important;
+    linear-gradient(180deg, #EFEBE4 0%, #E5E0D7 100%) !important;
 }
 
 body.light {
   background-image:
     radial-gradient(circle at 14% 12%, rgba(107, 175, 145, 0.08) 0%, transparent 30%),
     radial-gradient(circle at 82% 8%, rgba(78, 157, 130, 0.05) 0%, transparent 24%),
-    linear-gradient(180deg, #FAFBF8 0%, #F3F5F2 100%) !important;
+    linear-gradient(180deg, #EFEBE4 0%, #E5E0D7 100%) !important;
 }
 
 ::selection {
@@ -299,20 +299,20 @@ body.light {
 html.light .bg-flora-dark,
 html.light .bg-flora-dark\/90,
 html.light .bg-flora-dark\/95 {
-  background-color: #F7F8F5 !important;
-  color: #18221D !important;
+  background-color: #E2DDD4 !important;
+  color: #1E2421 !important;
 }
 
 html.light .bg-flora-darker,
 html.light .bg-flora-darker\/60,
 html.light .bg-flora-darker\/80 {
-  background-color: #EBF0EA !important;
-  color: #18221D !important;
+  background-color: #D6D0C3 !important;
+  color: #1E2421 !important;
 }
 
 html.light .bg-flora-card {
-  background-color: #FAFBF8 !important;
-  color: #18221D !important;
+  background-color: #ECE8E0 !important;
+  color: #1E2421 !important;
 }
 
 html.light .bg-slate-900,
@@ -330,8 +330,8 @@ html.light .bg-slate-800\/80,
 html.light .bg-slate-800\/70,
 html.light .bg-gray-900,
 html.light .bg-gray-800 {
-  background-color: #F7F8F5 !important;
-  color: #18221D !important;
+  background-color: #E2DDD4 !important;
+  color: #1E2421 !important;
 }
 
 html.light .border-flora-border,
@@ -341,34 +341,34 @@ html.light .border-slate-800\/80,
 html.light .border-slate-800\/70,
 html.light .border-slate-700,
 html.light .border-slate-700 {
-  border-color: #DCE4DF !important;
+  border-color: #C8C1B3 !important;
 }
 
 html.light .text-slate-100,
 html.light .text-slate-200,
 html.light .text-slate-300 {
-  color: #18221D !important;
+  color: #1E2421 !important;
 }
 
 html.light .text-slate-400 {
-  color: #4A5B52 !important;
+  color: #555E58 !important;
 }
 
 html.light .text-slate-500 {
-  color: #4A5B52 !important;
+  color: #555E58 !important;
 }
 
 html.light .text-slate-600 {
-  color: #4A5B52 !important;
+  color: #555E58 !important;
 }
 
 html.light .dashboard-shell svg text,
 html.light .dashboard-shell svg tspan {
-  fill: #4A5B52 !important;
+  fill: #555E58 !important;
 }
 
 html.light .dashboard-shell svg line {
-  stroke: #DCE4DF !important;
+  stroke: #C8C1B3 !important;
 }
 
 /* Custom Scrollbars */

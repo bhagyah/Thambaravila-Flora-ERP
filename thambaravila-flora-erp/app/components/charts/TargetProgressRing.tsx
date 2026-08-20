@@ -51,18 +51,18 @@ export default function TargetProgressRing({
   const strokeDashoffset = circumference - (clampedProgress / 100) * circumference;
 
   const shell = isLight
-    ? 'border-[#DCE4DF] bg-[#FAFBF8] text-[#18221D] shadow-[0_12px_32px_rgba(35,48,41,0.06)]'
+    ? 'border-[#C8C1B3] bg-[#E2DDD4] text-[#1E2421] shadow-[0_4px_16px_rgba(45,40,30,0.06)]'
     : 'border-white/10 bg-[#171c1a]/78 text-white shadow-[0_18px_40px_rgba(0,0,0,0.22)]';
-  const titleClass = isLight ? 'text-[#18221D]' : 'text-white';
-  const subtitleClass = isLight ? 'text-[#4A5B52]' : 'text-slate-400';
+  const titleClass = isLight ? 'text-[#1E2421]' : 'text-white';
+  const subtitleClass = isLight ? 'text-[#555E58]' : 'text-slate-400';
 
   return (
     <div className={`rounded-2xl p-5 flex h-full w-full flex-col justify-between space-y-4 border ${shell}`}>
       {/* Header with Title & Timeframe Selector Buttons */}
-      <div className={`flex flex-col space-y-3 border-b pb-3 ${isLight ? 'border-[#DCE4DF]' : 'border-white/10'}`}>
+      <div className={`flex flex-col space-y-3 border-b pb-3 ${isLight ? 'border-[#C8C1B3]' : 'border-white/10'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className={`flex h-8 w-8 items-center justify-center rounded-xl border text-sm shadow-inner ${isLight ? 'border-[#D2DBD4] bg-[#EBF0EA] text-[#2C3B34]' : 'border-white/10 bg-white/[0.06] text-white'}`}>
+            <div className={`flex h-8 w-8 items-center justify-center rounded-xl border text-sm shadow-inner ${isLight ? 'border-[#C8C1B3] bg-[#D6D0C3] text-[#2C3B34]' : 'border-white/10 bg-white/[0.06] text-white'}`}>
               🎯
             </div>
             <div>
@@ -71,14 +71,14 @@ export default function TargetProgressRing({
             </div>
           </div>
 
-          <span className={`rounded px-2 py-0.5 text-[10px] font-extrabold uppercase ${isLight ? 'border border-[#D2DBD4] bg-[#EBF0EA] text-[#4E9D82]' : 'border border-flora-sage/30 bg-flora-sage/15 text-flora-sage'}`}>
+          <span className={`rounded px-2 py-0.5 text-[10px] font-extrabold uppercase ${isLight ? 'border border-[#C8C1B3] bg-[#ECE8E0] text-[#1E7045]' : 'border border-flora-sage/30 bg-flora-sage/15 text-flora-sage'}`}>
             {timeframeLabel}
           </span>
         </div>
 
         {/* Interactive Timeframe Selector Pills (if callback provided) */}
         {onTimeRangeChange && (
-          <div className={`flex items-center justify-between rounded-xl border p-1 text-[11px] font-bold ${isLight ? 'border-[#D2DBD4] bg-[#EBF0EA]' : 'border-white/10 bg-white/[0.06]'}`}>
+          <div className={`flex items-center justify-between rounded-xl border p-1 text-[11px] font-bold ${isLight ? 'border-[#C8C1B3] bg-[#D6D0C3]' : 'border-white/10 bg-white/[0.06]'}`}>
             {[
               { id: '1d', label: 'Daily' },
               { id: '1w', label: 'Weekly' },
@@ -92,7 +92,7 @@ export default function TargetProgressRing({
                   activeTimeRange === t.id
                     ? 'bg-flora-green text-slate-950 font-black shadow'
                     : isLight
-                    ? 'text-[#4A5B52] hover:text-[#18221D]'
+                    ? 'text-[#555E58] hover:text-[#1E2421]'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -121,7 +121,7 @@ export default function TargetProgressRing({
               cy="70"
               r={radius}
               fill="transparent"
-              stroke={isLight ? '#D2DBD4' : 'var(--flora-border)'}
+              stroke={isLight ? '#C8C1B3' : 'var(--flora-border)'}
               strokeWidth={strokeWidth}
               className="opacity-50"
             />
@@ -143,10 +143,10 @@ export default function TargetProgressRing({
 
           {/* Center Info Text */}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-            <span className={`text-2xl font-black tracking-tight ${isLight ? 'text-[#18221D]' : 'text-slate-100'}`}>
+            <span className={`text-2xl font-black tracking-tight ${isLight ? 'text-[#1E2421]' : 'text-slate-100'}`}>
               {clampedProgress}%
             </span>
-            <span className={`-mt-0.5 text-[10px] font-bold uppercase tracking-widest ${isLight ? 'text-[#4E9D82]' : 'text-flora-sage'}`}>
+            <span className={`-mt-0.5 text-[10px] font-bold uppercase tracking-widest ${isLight ? 'text-[#1E7045]' : 'text-flora-sage'}`}>
               Achieved
             </span>
           </div>
@@ -154,28 +154,28 @@ export default function TargetProgressRing({
 
         {/* Small Metric Boxes Inside Chart Card */}
         <div className="w-full space-y-2 text-xs">
-          <div className={`flex items-center justify-between rounded-xl border p-2.5 ${isLight ? 'border-[#D2DBD4] bg-[#EBF0EA]' : 'border-white/10 bg-white/[0.06]'}`}>
-            <span className={`flex items-center space-x-1.5 font-semibold ${isLight ? 'text-[#4A5B52]' : 'text-slate-400'}`}>
+          <div className={`flex items-center justify-between rounded-xl border p-2.5 ${isLight ? 'border-[#C8C1B3] bg-[#D6D0C3]' : 'border-white/10 bg-white/[0.06]'}`}>
+            <span className={`flex items-center space-x-1.5 font-semibold ${isLight ? 'text-[#555E58]' : 'text-slate-400'}`}>
               <span>🎯</span>
               <span>Target Goal:</span>
             </span>
-            <span className={`font-black ${isLight ? 'text-[#18221D]' : 'text-slate-100'}`}>{formatLKR(targetVal, false)}</span>
+            <span className={`font-black ${isLight ? 'text-[#1E2421]' : 'text-slate-100'}`}>{formatLKR(targetVal, false)}</span>
           </div>
 
-          <div className={`flex items-center justify-between rounded-xl border p-2.5 ${isLight ? 'border-emerald-200/80 bg-[#EBF6F0]' : 'border-emerald-500/20 bg-emerald-500/10'}`}>
-            <span className={`flex items-center space-x-1.5 font-semibold ${isLight ? 'text-emerald-800' : 'text-emerald-400'}`}>
+          <div className={`flex items-center justify-between rounded-xl border p-2.5 ${isLight ? 'border-[#C8C1B3] bg-[#D6D0C3]' : 'border-emerald-500/20 bg-emerald-500/10'}`}>
+            <span className={`flex items-center space-x-1.5 font-semibold ${isLight ? 'text-[#166534]' : 'text-emerald-400'}`}>
               <span>💳</span>
               <span>Achieved:</span>
             </span>
-            <span className={`font-black ${isLight ? 'text-emerald-800' : 'text-emerald-300'}`}>{formatLKR(achievedVal, false)}</span>
+            <span className={`font-black ${isLight ? 'text-[#166534]' : 'text-emerald-300'}`}>{formatLKR(achievedVal, false)}</span>
           </div>
 
-          <div className={`flex items-center justify-between rounded-xl border p-2.5 ${isLight ? 'border-amber-200/80 bg-[#FDF6EA]' : 'border-amber-500/20 bg-amber-500/10'}`}>
-            <span className={`flex items-center space-x-1.5 font-semibold ${isLight ? 'text-amber-800' : 'text-amber-400'}`}>
+          <div className={`flex items-center justify-between rounded-xl border p-2.5 ${isLight ? 'border-[#C8C1B3] bg-[#D6D0C3]' : 'border-amber-500/20 bg-amber-500/10'}`}>
+            <span className={`flex items-center space-x-1.5 font-semibold ${isLight ? 'text-[#92400e]' : 'text-amber-400'}`}>
               <span>⏳</span>
               <span>Need:</span>
             </span>
-            <span className={`font-black ${isLight ? 'text-amber-800' : 'text-amber-300'}`}>
+            <span className={`font-black ${isLight ? 'text-[#92400e]' : 'text-amber-300'}`}>
               {remainingVal > 0 ? formatLKR(remainingVal, false) : '🎉 Goal Met!'}
             </span>
           </div>

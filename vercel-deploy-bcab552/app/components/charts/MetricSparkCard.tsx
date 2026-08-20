@@ -71,17 +71,17 @@ export default function MetricSparkCard({
       className={[
         'rounded-2xl border p-5 transition-all duration-200 hover:scale-[1.02] hover:shadow-md',
         isLight
-          ? 'border-[#DCE4DF] bg-[#FAFBF8] text-[#18221D] shadow-[0_6px_20px_rgba(35,48,41,0.04)]'
+          ? 'border-[#C8C1B3] bg-[#E2DDD4] text-[#1E2421] shadow-[0_4px_16px_rgba(45,40,30,0.06)]'
           : `border-white/10 bg-[#171c1a]/78 text-white shadow-[0_18px_40px_rgba(0,0,0,0.22)] bg-gradient-to-br ${getAccentClass()}`,
         href ? 'cursor-pointer' : '',
       ].join(' ')}
     >
       <div className="flex items-center justify-between">
-        <span className={`text-xs uppercase font-bold tracking-wider ${isLight ? 'text-[#4A5B52]' : 'text-slate-300'}`}>{label}</span>
+        <span className={`text-xs uppercase font-bold tracking-wider ${isLight ? 'text-[#555E58]' : 'text-slate-300'}`}>{label}</span>
         <div
           className={[
             'flex h-8 w-8 items-center justify-center rounded-xl border text-sm shadow-inner',
-            isLight ? 'border-[#D2DBD4] bg-[#EBF0EA] text-[#2C3B34]' : 'border-white/10 bg-white/[0.06] text-white',
+            isLight ? 'border-[#C8C1B3] bg-[#D6D0C3] text-[#2C3B34]' : 'border-white/10 bg-white/[0.06] text-white',
           ].join(' ')}
         >
           {icon}
@@ -89,7 +89,7 @@ export default function MetricSparkCard({
       </div>
 
       <div className="flex items-baseline justify-between">
-        <div className={`text-2xl font-black ${isLight ? 'text-[#18221D]' : 'text-white'}`}>{value}</div>
+        <div className={`text-2xl font-black ${isLight ? 'text-[#1E2421]' : 'text-white'}`}>{value}</div>
 
         {change && (
           <span

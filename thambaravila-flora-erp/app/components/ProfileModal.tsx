@@ -515,8 +515,8 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                         <div
                           className="absolute inset-0 backdrop-blur-[2px] pointer-events-none transition-all duration-200"
                           style={{
-                            backgroundColor: `rgba(244, 246, 242, ${pLightAlpha})`,
-                            backgroundImage: `linear-gradient(180deg, rgba(248, 249, 246, ${pLightTopAlpha}) 0%, rgba(239, 243, 238, ${pLightAlpha}) 50%, rgba(245, 247, 243, ${pLightBotAlpha}) 100%)`,
+                            backgroundColor: `rgba(226, 221, 212, ${pLightAlpha})`,
+                            backgroundImage: `linear-gradient(180deg, rgba(238, 234, 226, ${pLightTopAlpha}) 0%, rgba(220, 214, 203, ${pLightAlpha}) 50%, rgba(226, 221, 212, ${pLightBotAlpha}) 100%)`,
                           }}
                         />
                       ) : (
@@ -535,7 +535,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                           <div className="w-6 h-6 rounded-lg bg-emerald-500/30 border border-emerald-400/50 flex items-center justify-center text-xs">
                             🌸
                           </div>
-                          <span className={`text-xs font-black tracking-wider ${previewMode === 'light' ? 'text-[#18221D]' : 'text-white'}`}>
+                          <span className={`text-xs font-black tracking-wider ${previewMode === 'light' ? 'text-[#1E2421]' : 'text-white'}`}>
                             THAMBARAVILA ERP
                           </span>
                         </div>
@@ -547,7 +547,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                       <div className="relative z-10 grid grid-cols-2 gap-2">
                         <div className={`p-2.5 rounded-xl border backdrop-blur-sm shadow ${
                           previewMode === 'light'
-                            ? 'bg-[#FAFBF8] border-[#DCE4DF] text-[#18221D]'
+                            ? 'bg-[#E2DDD4] border-[#C8C1B3] text-[#1E2421]'
                             : 'bg-slate-900/90 border-flora-border text-slate-100'
                         }`}>
                           <div className="text-[9px] uppercase font-bold text-slate-400">Total Bookings</div>
@@ -555,7 +555,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                         </div>
                         <div className={`p-2.5 rounded-xl border backdrop-blur-sm shadow ${
                           previewMode === 'light'
-                            ? 'bg-[#FAFBF8] border-[#DCE4DF] text-[#18221D]'
+                            ? 'bg-[#E2DDD4] border-[#C8C1B3] text-[#1E2421]'
                             : 'bg-slate-900/90 border-flora-border text-slate-100'
                         }`}>
                           <div className="text-[9px] uppercase font-bold text-slate-400">Active Role</div>

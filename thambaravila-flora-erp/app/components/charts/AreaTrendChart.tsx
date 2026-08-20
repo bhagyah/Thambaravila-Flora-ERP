@@ -91,20 +91,20 @@ export default function AreaTrendChart({
   const yTicks = [maxVal, maxVal * 0.66, maxVal * 0.33, 0];
 
   const shell = isLight
-    ? 'border-[#DCE4DF] bg-[#FAFBF8] text-[#18221D] shadow-[0_12px_32px_rgba(35,48,41,0.06)]'
+    ? 'border-[#C8C1B3] bg-[#E2DDD4] text-[#1E2421] shadow-[0_4px_16px_rgba(45,40,30,0.06)]'
     : 'border-white/10 bg-[#171c1a]/78 text-white shadow-[0_18px_40px_rgba(0,0,0,0.22)]';
-  const titleClass = isLight ? 'text-[#18221D]' : 'text-white';
-  const subtitleClass = isLight ? 'text-[#4A5B52]' : 'text-slate-400';
-  const axisColor = isLight ? '#4A5B52' : '#94a3b8';
-  const gridColor = isLight ? '#D2DBD4' : '#334155';
+  const titleClass = isLight ? 'text-[#1E2421]' : 'text-white';
+  const subtitleClass = isLight ? 'text-[#555E58]' : 'text-slate-400';
+  const axisColor = isLight ? '#555E58' : '#94a3b8';
+  const gridColor = isLight ? '#C8C1B3' : '#334155';
   const tooltipShell = isLight
-    ? 'bg-[#FAFBF8] border-[#DCE4DF] text-[#18221D] shadow-[0_12px_32px_rgba(35,48,41,0.1)]'
+    ? 'bg-[#ECE8E0] border-[#C8C1B3] text-[#1E2421] shadow-[0_12px_32px_rgba(45,40,30,0.12)]'
     : 'bg-slate-950/95 border-teal-500/40 text-white shadow-2xl';
 
   return (
     <div className={`rounded-2xl p-6 space-y-4 flex h-full flex-col justify-between border ${shell}`}>
       {/* Header & Legend Controls */}
-      <div className={`flex flex-col gap-3 border-b pb-4 md:flex-row md:items-center md:justify-between ${isLight ? 'border-slate-200' : 'border-white/10'}`}>
+      <div className={`flex flex-col gap-3 border-b pb-4 md:flex-row md:items-center md:justify-between ${isLight ? 'border-[#C8C1B3]' : 'border-white/10'}`}>
         <div>
           <h3 className={`flex items-center space-x-2 text-base font-bold ${titleClass}`}>
             <span>📈</span>

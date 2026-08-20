@@ -40,17 +40,17 @@ export default function BarChartWidget({
   ];
 
   const shell = isLight
-    ? 'border-[#DCE4DF] bg-[#FAFBF8] text-[#18221D] shadow-[0_12px_32px_rgba(35,48,41,0.06)]'
+    ? 'border-[#C8C1B3] bg-[#E2DDD4] text-[#1E2421] shadow-[0_4px_16px_rgba(45,40,30,0.06)]'
     : 'border-white/10 bg-[#171c1a]/78 text-white shadow-[0_18px_40px_rgba(0,0,0,0.22)]';
-  const titleClass = isLight ? 'text-[#18221D]' : 'text-white';
-  const subtitleClass = isLight ? 'text-[#4A5B52]' : 'text-slate-400';
-  const trackClass = isLight ? 'bg-[#EBF0EA] border-[#D2DBD4]' : 'bg-slate-950 border-slate-800';
-  const mutedClass = isLight ? 'text-[#4A5B52]' : 'text-slate-400';
+  const titleClass = isLight ? 'text-[#1E2421]' : 'text-white';
+  const subtitleClass = isLight ? 'text-[#555E58]' : 'text-slate-400';
+  const trackClass = isLight ? 'bg-[#D6D0C3] border-[#C8C1B3]' : 'bg-slate-950 border-slate-800';
+  const mutedClass = isLight ? 'text-[#555E58]' : 'text-slate-400';
 
   return (
     <div className={`rounded-2xl p-6 space-y-4 flex h-full flex-col justify-between border ${shell}`}>
       {/* Title */}
-      <div className={`border-b pb-3 ${isLight ? 'border-[#DCE4DF]' : 'border-white/10'}`}>
+      <div className={`border-b pb-3 ${isLight ? 'border-[#C8C1B3]' : 'border-white/10'}`}>
         <h3 className={`flex items-center space-x-2 text-base font-bold ${titleClass}`}>
           <span>📊</span>
           <span>{title}</span>
