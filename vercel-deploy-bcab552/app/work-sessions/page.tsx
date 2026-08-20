@@ -5,6 +5,8 @@ import { useSession } from 'next-auth/react';
 
 interface Geofence {
   name: string;
+  zoneType?: string;
+  isMain?: boolean;
 }
 
 interface WorkSession {
@@ -16,6 +18,8 @@ interface WorkSession {
   duration: number | null;
   notes: string | null;
   locationVerified: boolean;
+  isWfh?: boolean;
+  workMode?: string;
   clockInLatitude: number | null;
   clockInLongitude: number | null;
   clockInAccuracyMeters: number | null;
@@ -48,7 +52,7 @@ export default function WorkSessionsPage() {
   const [sessions, setSessions] = useState<WorkSession[]>([]);
   const [activeSession, setActiveSession] = useState<WorkSession | null>(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'verified' | 'unverified'>('all');
+  const [filter, setFilter] = useState<'all' | 'on_site' | 'wfh' | 'unverified'>('all');
 
   const isPrivileged =
     session?.user?.role?.name === 'Owner' ||
@@ -71,12 +75,18 @@ export default function WorkSessionsPage() {
   useEffect(() => { fetchSessions(); }, [fetchSessions]);
 
   const filtered = sessions.filter((s) => {
-    if (filter === 'verified') return s.locationVerified;
+    const isSessionWfh = Boolean(s.isWfh || s.workMode === 'WFH' || s.geofence?.zoneType === 'WFH');
+    if (filter === 'on_site') return s.locationVerified && !isSessionWfh;
+    if (filter === 'wfh') return isSessionWfh;
     if (filter === 'unverified') return !s.locationVerified;
     return true;
   });
 
-  const totalHours = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+  const totalMinutes = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+  const wfhMinutes = sessions
+    .filter((s) => s.isWfh || s.workMode === 'WFH' || s.geofence?.zoneType === 'WFH')
+    .reduce((sum, s) => sum + (s.duration || 0), 0);
+  const onSiteMinutes = Math.max(0, totalMinutes - wfhMinutes);
 
   return (
     <div className="min-h-screen bg-flora-darker p-6 space-y-6">
@@ -87,47 +97,76 @@ export default function WorkSessionsPage() {
         </h1>
         <p className="text-slate-400 text-sm mt-1">
           {isPrivileged
-            ? 'All staff attendance records with geofence verification status.'
-            : 'Your personal attendance history with geofence verification.'}
+            ? 'All staff attendance records with geofence verification and Work From Home status.'
+            : 'Your personal attendance history with geofence verification and Work From Home records.'}
         </p>
-        {/* Disclaimer — required per spec */}
+        {/* Disclaimer */}
         <p className="text-[11px] text-amber-400/70 mt-1">
-          ⚠️ Geofence verification is best-effort. GPS location can be affected by indoor conditions,
-          device settings, or deliberately spoofed — this record is informational, not tamper-proof.
+          ⚠️ Geofence verification is best-effort. Staff inside authorized Main or WFH zones have their attendance verified and tagged accordingly.
         </p>
       </div>
 
       {/* Active Session Banner */}
-      {activeSession && (
-        <div className="bg-emerald-900/30 border border-emerald-700/50 rounded-2xl p-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
-            </span>
-            <div>
-              <div className="text-emerald-200 font-bold text-sm">Currently Clocked In</div>
-              <div className="text-emerald-400/80 text-xs">
-                Since {formatTime(activeSession.startTime)} · 
-                {activeSession.geofence
-                  ? ` Verified at ${activeSession.geofence.name}`
-                  : ' Location not verified'}
+      {activeSession && (() => {
+        const isSessionWfh = Boolean(activeSession.isWfh || activeSession.workMode === 'WFH' || activeSession.geofence?.zoneType === 'WFH');
+        return (
+          <div className={`border rounded-2xl p-4 flex items-center justify-between gap-4 ${
+            isSessionWfh
+              ? 'bg-blue-950/40 border-blue-700/50'
+              : 'bg-emerald-900/30 border-emerald-700/50'
+          }`}>
+            <div className="flex items-center gap-3">
+              <span className="relative flex h-3 w-3">
+                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                  isSessionWfh ? 'bg-blue-400' : 'bg-emerald-400'
+                }`} />
+                <span className={`relative inline-flex rounded-full h-3 w-3 ${
+                  isSessionWfh ? 'bg-blue-500' : 'bg-emerald-500'
+                }`} />
+              </span>
+              <div>
+                <div className={`font-bold text-sm flex items-center gap-2 ${
+                  isSessionWfh ? 'text-blue-200' : 'text-emerald-200'
+                }`}>
+                  <span>Currently Clocked In</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                    isSessionWfh
+                      ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                      : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  }`}>
+                    {isSessionWfh ? '🏠 Work From Home' : '🏢 On-Site (Main)'}
+                  </span>
+                </div>
+                <div className={`text-xs mt-0.5 ${
+                  isSessionWfh ? 'text-blue-400/80' : 'text-emerald-400/80'
+                }`}>
+                  Since {formatTime(activeSession.startTime)} · 
+                  {activeSession.geofence
+                    ? ` Verified at ${activeSession.geofence.name}`
+                    : ' Location not verified'}
+                </div>
               </div>
             </div>
+            <div className="text-xs font-semibold text-right">
+              {activeSession.locationVerified ? (
+                <span className={isSessionWfh ? 'text-blue-300' : 'text-emerald-300'}>
+                  ✅ Geofence Verified
+                </span>
+              ) : (
+                <span className="text-amber-400">⚠️ No Location</span>
+              )}
+            </div>
           </div>
-          <div className="text-xs text-emerald-300 font-semibold">
-            {activeSession.locationVerified ? '✅ Geofence Verified' : '⚠️ No Location'}
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Sessions', value: sessions.length, icon: '📋' },
-          { label: 'Verified Sessions', value: sessions.filter((s) => s.locationVerified).length, icon: '✅' },
-          { label: 'Unverified', value: sessions.filter((s) => !s.locationVerified).length, icon: '⚠️' },
-          { label: 'Total Hours', value: `${Math.floor(totalHours / 60)}h ${totalHours % 60}m`, icon: '⏱️' },
+          { label: 'Total Sessions', value: sessions.length, icon: '📋', sub: `${formatDuration(totalMinutes)} total` },
+          { label: 'On-Site Work', value: `${Math.floor(onSiteMinutes / 60)}h ${onSiteMinutes % 60}m`, icon: '🏢', sub: 'in approved workplaces' },
+          { label: 'Work From Home', value: `${Math.floor(wfhMinutes / 60)}h ${wfhMinutes % 60}m`, icon: '🏠', sub: 'in approved home zones' },
+          { label: 'GPS Verified', value: `${sessions.filter((s) => s.locationVerified).length}/${sessions.length}`, icon: '✅', sub: 'location confirmed' },
         ].map((stat) => (
           <div
             key={stat.label}
@@ -135,24 +174,30 @@ export default function WorkSessionsPage() {
           >
             <div className="text-2xl mb-1">{stat.icon}</div>
             <div className="text-xl font-extrabold text-slate-100">{stat.value}</div>
-            <div className="text-xs text-slate-400 mt-0.5">{stat.label}</div>
+            <div className="text-xs font-bold text-slate-300 mt-0.5">{stat.label}</div>
+            <div className="text-[10px] text-slate-500 mt-0.5">{stat.sub}</div>
           </div>
         ))}
       </div>
 
       {/* Filter Tabs */}
       <div className="flex gap-2">
-        {(['all', 'verified', 'unverified'] as const).map((f) => (
+        {[
+          { key: 'all', label: 'All Sessions' },
+          { key: 'on_site', label: '🏢 On-Site' },
+          { key: 'wfh', label: '🏠 Work From Home' },
+          { key: 'unverified', label: '⚠️ Unverified' },
+        ].map((f) => (
           <button
-            key={f}
-            onClick={() => setFilter(f)}
+            key={f.key}
+            onClick={() => setFilter(f.key as any)}
             className={`px-4 py-1.5 rounded-xl text-xs font-bold border transition ${
-              filter === f
+              filter === f.key
                 ? 'bg-flora-green text-slate-950 border-flora-green'
                 : 'bg-flora-card border-flora-border text-slate-300 hover:text-white'
             }`}
           >
-            {f === 'all' ? 'All Sessions' : f === 'verified' ? '✅ Verified' : '⚠️ Unverified'}
+            {f.label}
           </button>
         ))}
       </div>
@@ -177,69 +222,76 @@ export default function WorkSessionsPage() {
                   <th className="text-left p-4">Clock In</th>
                   <th className="text-left p-4">Clock Out</th>
                   <th className="text-right p-4">Duration</th>
-                  <th className="text-center p-4">Location</th>
+                  <th className="text-center p-4">Mode</th>
                   <th className="text-left p-4">Zone</th>
                   <th className="text-right p-4">GPS Accuracy</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((s) => (
-                  <tr
-                    key={s.id}
-                    className="border-b border-flora-border last:border-0 hover:bg-flora-darker/50 transition"
-                  >
-                    <td className="p-4">
-                      <div className="font-semibold text-slate-200">{formatDate(s.startTime)}</div>
-                    </td>
-                    {isPrivileged && (
-                      <td className="p-4 text-slate-300 font-medium">{s.userName}</td>
-                    )}
-                    <td className="p-4 font-mono text-slate-300 text-xs">
-                      {formatTime(s.startTime)}
-                      {s.clockInLatitude != null && (
-                        <div className="text-slate-500 text-[10px]">
-                          {s.clockInLatitude.toFixed(4)}, {s.clockInLongitude?.toFixed(4)}
-                        </div>
+                {filtered.map((s) => {
+                  const isSessionWfh = Boolean(s.isWfh || s.workMode === 'WFH' || s.geofence?.zoneType === 'WFH');
+                  return (
+                    <tr
+                      key={s.id}
+                      className="border-b border-flora-border last:border-0 hover:bg-flora-darker/50 transition"
+                    >
+                      <td className="p-4">
+                        <div className="font-semibold text-slate-200">{formatDate(s.startTime)}</div>
+                      </td>
+                      {isPrivileged && (
+                        <td className="p-4 text-slate-300 font-medium">{s.userName}</td>
                       )}
-                    </td>
-                    <td className="p-4 font-mono text-slate-300 text-xs">
-                      {s.endTime ? (
-                        <>
-                          {formatTime(s.endTime)}
-                          {s.clockOutLatitude != null && (
-                            <div className="text-slate-500 text-[10px]">
-                              {s.clockOutLatitude.toFixed(4)}, {s.clockOutLongitude?.toFixed(4)}
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <span className="text-emerald-400 font-semibold">Active</span>
-                      )}
-                    </td>
-                    <td className="p-4 text-right font-semibold text-slate-200">
-                      {s.endTime ? formatDuration(s.duration) : '—'}
-                    </td>
-                    <td className="p-4 text-center">
-                      {s.locationVerified ? (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-900/40 text-emerald-300 border border-emerald-700/50">
-                          ✅ Verified
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-900/30 text-amber-300 border border-amber-700/40">
-                          ⚠️ Unverified
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-4 text-slate-400 text-xs">
-                      {s.geofence?.name || <span className="text-slate-600">—</span>}
-                    </td>
-                    <td className="p-4 text-right text-xs font-mono text-slate-400">
-                      {s.clockInAccuracyMeters != null
-                        ? `±${Math.round(s.clockInAccuracyMeters)}m`
-                        : '—'}
-                    </td>
-                  </tr>
-                ))}
+                      <td className="p-4 font-mono text-slate-300 text-xs">
+                        {formatTime(s.startTime)}
+                        {s.clockInLatitude != null && (
+                          <div className="text-slate-500 text-[10px]">
+                            {s.clockInLatitude.toFixed(4)}, {s.clockInLongitude?.toFixed(4)}
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-4 font-mono text-slate-300 text-xs">
+                        {s.endTime ? (
+                          <>
+                            {formatTime(s.endTime)}
+                            {s.clockOutLatitude != null && (
+                              <div className="text-slate-500 text-[10px]">
+                                {s.clockOutLatitude.toFixed(4)}, {s.clockOutLongitude?.toFixed(4)}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-emerald-400 font-semibold">Active</span>
+                        )}
+                      </td>
+                      <td className="p-4 text-right font-semibold text-slate-200">
+                        {s.endTime ? formatDuration(s.duration) : '—'}
+                      </td>
+                      <td className="p-4 text-center">
+                        {isSessionWfh ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-500/20 text-blue-300 border border-blue-500/40">
+                            🏠 WFH
+                          </span>
+                        ) : s.locationVerified ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            🏢 On-Site
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-900/30 text-amber-300 border border-amber-700/40">
+                            ⚠️ Unverified
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-4 text-slate-300 text-xs font-medium">
+                        {s.geofence?.name || <span className="text-slate-600">—</span>}
+                      </td>
+                      <td className="p-4 text-right text-xs font-mono text-slate-400">
+                        {s.clockInAccuracyMeters != null
+                          ? `±${Math.round(s.clockInAccuracyMeters)}m`
+                          : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

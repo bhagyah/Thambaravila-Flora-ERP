@@ -116,8 +116,9 @@ export default function AttendanceButton() {
             setActiveSession(data.workSession);
             setStatus('clocked_in');
             setMessageType('success');
+            const modeLabel = data.isWfh ? '🏠 Clocked in (Work From Home)' : '🏢 Clocked in (On-Site)';
             setMessage(
-              `✅ Clocked in at ${new Date().toLocaleTimeString()} — verified at ${data.geofenceName || 'approved zone'}.`
+              `✅ ${modeLabel} at ${new Date().toLocaleTimeString()} — verified at ${data.geofenceName || 'approved zone'}.`
             );
           } else {
             setActiveSession(null);

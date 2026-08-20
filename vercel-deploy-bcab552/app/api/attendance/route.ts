@@ -109,7 +109,7 @@ export async function GET(req: Request) {
         startTime: { gte: fromDate, lte: toDate },
         ...(canViewTeamAttendance ? {} : { userId: session.user.id }),
       },
-      include: { geofence: { select: { name: true } } },
+      include: { geofence: { select: { name: true, zoneType: true, isMain: true } } },
       orderBy: { startTime: 'desc' },
     });
 
@@ -136,14 +136,18 @@ export async function GET(req: Request) {
       email: string;
       sessions: typeof sessions;
       totalMinutes: number;
+      wfhMinutes: number;
+      wfhSessionsCount: number;
+      onSiteMinutes: number;
       daysPresent: Set<string>;
       verifiedCount: number;
-      // daily breakdown: date → total minutes that day
       dailyMinutes: Record<string, number>;
       lateCount: number;
     }> = {};
 
     for (const s of sessions) {
+      const isSessionWfh = Boolean(s.isWfh || s.workMode === 'WFH' || s.geofence?.zoneType === 'WFH');
+
       if (!byUser[s.userId]) {
         const user = allUsers.find((u) => u.id === s.userId);
         byUser[s.userId] = {
@@ -153,6 +157,9 @@ export async function GET(req: Request) {
           email: user?.email || '',
           sessions: [],
           totalMinutes: 0,
+          wfhMinutes: 0,
+          wfhSessionsCount: 0,
+          onSiteMinutes: 0,
           daysPresent: new Set(),
           verifiedCount: 0,
           dailyMinutes: {},
@@ -162,11 +169,19 @@ export async function GET(req: Request) {
 
       const rec = byUser[s.userId];
       rec.sessions.push(s);
-      rec.totalMinutes += s.duration || 0;
+      const dur = s.duration || 0;
+      rec.totalMinutes += dur;
+
+      if (isSessionWfh) {
+        rec.wfhMinutes += dur;
+        rec.wfhSessionsCount++;
+      } else {
+        rec.onSiteMinutes += dur;
+      }
 
       const dateKey = new Date(s.startTime).toISOString().slice(0, 10);
       rec.daysPresent.add(dateKey);
-      rec.dailyMinutes[dateKey] = (rec.dailyMinutes[dateKey] || 0) + (s.duration || 0);
+      rec.dailyMinutes[dateKey] = (rec.dailyMinutes[dateKey] || 0) + dur;
 
       if (s.locationVerified) rec.verifiedCount++;
 
@@ -186,6 +201,11 @@ export async function GET(req: Request) {
 
       const actualMinutes = rec?.totalMinutes || 0;
       const actualHours = Math.round((actualMinutes / 60) * 10) / 10;
+      const wfhMinutes = rec?.wfhMinutes || 0;
+      const wfhHours = Math.round((wfhMinutes / 60) * 10) / 10;
+      const onSiteMinutes = rec?.onSiteMinutes || 0;
+      const onSiteHours = Math.round((onSiteMinutes / 60) * 10) / 10;
+
       const daysPresent = rec ? rec.daysPresent.size : 0;
       const daysAbsent = Math.max(0, expectedWorkingDays - daysPresent);
       const compliancePct =
@@ -217,6 +237,11 @@ export async function GET(req: Request) {
         sessionsCount: rec?.sessions.length || 0,
         totalMinutes: actualMinutes,
         totalHours: actualHours,
+        wfhMinutes,
+        wfhHours,
+        wfhSessionsCount: rec?.wfhSessionsCount || 0,
+        onSiteMinutes,
+        onSiteHours,
         // Days
         daysPresent,
         daysAbsent,
@@ -229,15 +254,21 @@ export async function GET(req: Request) {
         verifiedCount: rec?.verifiedCount || 0,
         // Breakdowns
         dailyBreakdown,
-        sessions: (rec?.sessions || []).map((s) => ({
-          id: s.id,
-          startTime: s.startTime,
-          endTime: s.endTime,
-          duration: s.duration,
-          locationVerified: s.locationVerified,
-          geofenceName: s.geofence?.name || null,
-          clockInAccuracyMeters: s.clockInAccuracyMeters,
-        })),
+        sessions: (rec?.sessions || []).map((s) => {
+          const isSessionWfh = Boolean(s.isWfh || s.workMode === 'WFH' || s.geofence?.zoneType === 'WFH');
+          return {
+            id: s.id,
+            startTime: s.startTime,
+            endTime: s.endTime,
+            duration: s.duration,
+            locationVerified: s.locationVerified,
+            isWfh: isSessionWfh,
+            workMode: isSessionWfh ? 'WFH' : 'ON_SITE',
+            geofenceName: s.geofence?.name || null,
+            zoneType: s.geofence?.zoneType || (isSessionWfh ? 'WFH' : 'MAIN'),
+            clockInAccuracyMeters: s.clockInAccuracyMeters,
+          };
+        }),
       };
     });
 
@@ -245,6 +276,12 @@ export async function GET(req: Request) {
     const totalSessions = sessions.length;
     const totalVerified = sessions.filter((s) => s.locationVerified).length;
     const totalMinutesAll = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+    const totalWfhMinutes = sessions
+      .filter((s) => s.isWfh || s.workMode === 'WFH' || s.geofence?.zoneType === 'WFH')
+      .reduce((sum, s) => sum + (s.duration || 0), 0);
+    const totalWfhSessions = sessions.filter((s) => s.isWfh || s.workMode === 'WFH' || s.geofence?.zoneType === 'WFH').length;
+    const totalOnSiteMinutes = Math.max(0, totalMinutesAll - totalWfhMinutes);
+
     const staffPresent = Object.keys(byUser).length;
 
     return NextResponse.json({
@@ -264,6 +301,12 @@ export async function GET(req: Request) {
         totalVerified,
         totalMinutesAll,
         totalHoursAll: Math.round((totalMinutesAll / 60) * 10) / 10,
+        totalWfhMinutes,
+        totalWfhHours: Math.round((totalWfhMinutes / 60) * 10) / 10,
+        totalWfhSessions,
+        totalOnSiteMinutes,
+        totalOnSiteHours: Math.round((totalOnSiteMinutes / 60) * 10) / 10,
+        totalOnSiteSessions: totalSessions - totalWfhSessions,
         staffPresent,
         staffAbsent: allUsers.length - staffPresent,
         totalStaff: allUsers.length,

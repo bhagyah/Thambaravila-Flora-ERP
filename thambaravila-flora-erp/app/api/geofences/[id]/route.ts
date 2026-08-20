@@ -29,11 +29,37 @@ export async function PATCH(
 
   try {
     const body = await req.json();
-    const { name, centerLatitude, centerLongitude, radiusMeters, isActive } = body;
+    const { name, centerLatitude, centerLongitude, radiusMeters, isActive, isMain, zoneType, allowedRoles } = body;
 
     const existing = await prisma.geofence.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: 'Geofence not found.' }, { status: 404 });
+    }
+
+    let nextIsMain: boolean | undefined = undefined;
+    let nextZoneType: string | undefined = undefined;
+    let nextAllowedRoles: string | null | undefined = undefined;
+
+    if (isMain != null || zoneType != null) {
+      const type = zoneType != null ? zoneType : (isMain ? 'MAIN' : existing.zoneType);
+      const isMainFlag = isMain != null ? Boolean(isMain) : type === 'MAIN';
+      nextIsMain = isMainFlag;
+      nextZoneType = type;
+
+      if (isMainFlag) {
+        // Unmark other main zones
+        await prisma.geofence.updateMany({
+          where: { isMain: true, id: { not: id } },
+          data: { isMain: false },
+        });
+        nextAllowedRoles = null;
+      }
+    }
+
+    if (allowedRoles !== undefined && !nextIsMain) {
+      nextAllowedRoles = Array.isArray(allowedRoles)
+        ? allowedRoles.join(',')
+        : (typeof allowedRoles === 'string' ? allowedRoles : null);
     }
 
     const updated = await prisma.geofence.update({
@@ -44,6 +70,9 @@ export async function PATCH(
         ...(centerLongitude != null ? { centerLongitude: Number(centerLongitude) } : {}),
         ...(radiusMeters != null ? { radiusMeters: Math.round(Number(radiusMeters)) } : {}),
         ...(isActive != null ? { isActive: Boolean(isActive) } : {}),
+        ...(nextIsMain !== undefined ? { isMain: nextIsMain } : {}),
+        ...(nextZoneType !== undefined ? { zoneType: nextZoneType } : {}),
+        ...(nextAllowedRoles !== undefined ? { allowedRoles: nextAllowedRoles } : {}),
       },
     });
 

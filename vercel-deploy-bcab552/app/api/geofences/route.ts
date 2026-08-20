@@ -18,7 +18,7 @@ export async function GET() {
 
   try {
     const geofences = await prisma.geofence.findMany({
-      orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ isMain: 'desc' }, { isActive: 'desc' }, { createdAt: 'desc' }],
       select: {
         id: true,
         name: true,
@@ -26,6 +26,9 @@ export async function GET() {
         centerLongitude: true,
         radiusMeters: true,
         isActive: true,
+        isMain: true,
+        zoneType: true,
+        allowedRoles: true,
         createdById: true,
         createdAt: true,
         updatedAt: true,
@@ -55,7 +58,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { name, centerLatitude, centerLongitude, radiusMeters } = body;
+    const { name, centerLatitude, centerLongitude, radiusMeters, isMain, zoneType, allowedRoles } = body;
 
     if (!name || centerLatitude == null || centerLongitude == null || !radiusMeters) {
       return NextResponse.json(
@@ -70,6 +73,21 @@ export async function POST(req: Request) {
       );
     }
 
+    const type = zoneType === 'WFH' ? 'WFH' : (isMain || zoneType === 'MAIN' ? 'MAIN' : 'ON_SITE');
+    const mainFlag = type === 'MAIN' || Boolean(isMain);
+
+    // If marked as Main, unmark other main zones
+    if (mainFlag) {
+      await prisma.geofence.updateMany({
+        where: { isMain: true },
+        data: { isMain: false },
+      });
+    }
+
+    const rolesString = Array.isArray(allowedRoles)
+      ? allowedRoles.join(',')
+      : (typeof allowedRoles === 'string' ? allowedRoles : null);
+
     const geofence = await prisma.geofence.create({
       data: {
         name: name.trim(),
@@ -77,6 +95,9 @@ export async function POST(req: Request) {
         centerLongitude: Number(centerLongitude),
         radiusMeters: Math.round(Number(radiusMeters)),
         isActive: true,
+        isMain: mainFlag,
+        zoneType: type,
+        allowedRoles: type === 'MAIN' ? null : rolesString,
         createdById: session.user.id,
       },
     });
@@ -91,6 +112,9 @@ export async function POST(req: Request) {
         centerLatitude: geofence.centerLatitude,
         centerLongitude: geofence.centerLongitude,
         radiusMeters: geofence.radiusMeters,
+        isMain: geofence.isMain,
+        zoneType: geofence.zoneType,
+        allowedRoles: geofence.allowedRoles,
       },
     });
 

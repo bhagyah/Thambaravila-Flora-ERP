@@ -19,7 +19,10 @@ interface SessionRecord {
   endTime: string | null;
   duration: number | null;
   locationVerified: boolean;
+  isWfh?: boolean;
+  workMode?: string;
   geofenceName: string | null;
+  zoneType?: string;
   clockInAccuracyMeters: number | null;
 }
 
@@ -31,6 +34,11 @@ interface StaffRecord {
   sessionsCount: number;
   totalMinutes: number;
   totalHours: number;
+  wfhMinutes?: number;
+  wfhHours?: number;
+  wfhSessionsCount?: number;
+  onSiteMinutes?: number;
+  onSiteHours?: number;
   daysPresent: number;
   daysAbsent: number;
   expectedWorkingDays: number;
@@ -56,6 +64,12 @@ interface AttendanceStats {
   totalSessions: number;
   totalVerified: number;
   totalHoursAll: number;
+  totalWfhMinutes?: number;
+  totalWfhHours?: number;
+  totalWfhSessions?: number;
+  totalOnSiteMinutes?: number;
+  totalOnSiteHours?: number;
+  totalOnSiteSessions?: number;
   staffPresent: number;
   staffAbsent: number;
   totalStaff: number;
@@ -204,7 +218,7 @@ function StaffDetail({ staff, schedule }: { staff: StaffRecord; schedule: Schedu
           </div>
 
           {/* Key metrics */}
-          <div className="col-span-2 sm:col-span-3 grid grid-cols-3 gap-3">
+          <div className="col-span-2 sm:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {[
               {
                 icon: '📅',
@@ -218,16 +232,21 @@ function StaffDetail({ staff, schedule }: { staff: StaffRecord; schedule: Schedu
                 label: 'Total Hours',
                 value: `${staff.totalHours}h`,
                 sub: `${staff.sessionsCount} sessions`,
-                color: 'text-blue-400',
+                color: 'text-flora-sage',
               },
               {
-                icon: '🕐',
-                label: 'Daily Avg',
-                value: staff.daysPresent > 0
-                  ? `${Math.round((staff.totalMinutes / staff.daysPresent / 60) * 10) / 10}h`
-                  : '—',
-                sub: `vs ${schedule.hoursPerDay}h expected`,
-                color: 'text-flora-sage',
+                icon: '🏢',
+                label: 'On-Site Work',
+                value: `${staff.onSiteHours || 0}h`,
+                sub: `${Math.max(0, (staff.sessionsCount || 0) - (staff.wfhSessionsCount || 0))} sessions`,
+                color: 'text-emerald-400',
+              },
+              {
+                icon: '🏠',
+                label: 'Work From Home',
+                value: `${staff.wfhHours || 0}h`,
+                sub: `${staff.wfhSessionsCount || 0} sessions`,
+                color: 'text-blue-400',
               },
               {
                 icon: '⬆️',
@@ -249,6 +268,13 @@ function StaffDetail({ staff, schedule }: { staff: StaffRecord; schedule: Schedu
                 value: staff.lateCount,
                 sub: `>${schedule.graceMinutes}min grace`,
                 color: staff.lateCount > 0 ? 'text-amber-400' : 'text-slate-500',
+              },
+              {
+                icon: '📍',
+                label: 'GPS Verified',
+                value: `${staff.verifiedCount}/${staff.sessionsCount}`,
+                sub: 'location checked',
+                color: 'text-emerald-400',
               },
             ].map((m) => (
               <div key={m.label} className="bg-flora-card border border-flora-border rounded-xl p-3">
@@ -287,9 +313,6 @@ function StaffDetail({ staff, schedule }: { staff: StaffRecord; schedule: Schedu
             </thead>
             <tbody>
               {staff.expectedWorkingDays > 0 && (() => {
-                // Build a map of what days were actually worked
-                const workedMap = new Map(staff.dailyBreakdown.map((d) => [d.date, d]));
-                // Generate all expected working dates from sessions' date range
                 const rows = [];
                 for (const d of staff.dailyBreakdown) {
                   const diff = d.hours - d.expectedHours;
@@ -363,7 +386,7 @@ function StaffDetail({ staff, schedule }: { staff: StaffRecord; schedule: Schedu
                   <th className="text-left p-2.5">In</th>
                   <th className="text-left p-2.5">Out</th>
                   <th className="text-right p-2.5">Duration</th>
-                  <th className="text-left p-2.5">Zone</th>
+                  <th className="text-left p-2.5">Location & Mode</th>
                   <th className="text-center p-2.5">GPS</th>
                   <th className="text-right p-2.5">Accuracy</th>
                 </tr>
@@ -377,7 +400,20 @@ function StaffDetail({ staff, schedule }: { staff: StaffRecord; schedule: Schedu
                       {s.endTime ? fmt.time(s.endTime) : <span className="text-emerald-400">Active</span>}
                     </td>
                     <td className="p-2.5 text-right font-bold text-slate-200">{fmt.duration(s.duration)}</td>
-                    <td className="p-2.5 text-slate-400">{s.geofenceName || '—'}</td>
+                    <td className="p-2.5">
+                      <div className="flex items-center gap-1.5">
+                        {s.isWfh ? (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40">
+                            🏠 WFH
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            🏢 On-Site
+                          </span>
+                        )}
+                        <span className="text-slate-300 font-medium">{s.geofenceName || 'Approved Zone'}</span>
+                      </div>
+                    </td>
                     <td className="p-2.5 text-center">{s.locationVerified ? '✅' : '⚠️'}</td>
                     <td className="p-2.5 text-right font-mono text-slate-500">
                       {s.clockInAccuracyMeters != null ? `±${Math.round(s.clockInAccuracyMeters)}m` : '—'}
@@ -389,8 +425,10 @@ function StaffDetail({ staff, schedule }: { staff: StaffRecord; schedule: Schedu
                 <tr className="bg-flora-card/60 border-t border-flora-border font-bold">
                   <td colSpan={3} className="p-2.5 text-slate-400">Total</td>
                   <td className="p-2.5 text-right text-flora-sage">{fmt.duration(staff.totalMinutes)}</td>
-                  <td colSpan={3} className="p-2.5 text-right text-slate-500">
-                    {staff.verifiedCount}/{staff.sessionsCount} GPS verified
+                  <td colSpan={3} className="p-2.5 text-right text-slate-400">
+                    <span className="text-blue-300 font-semibold">{staff.wfhHours || 0}h WFH</span>
+                    {' · '}
+                    <span className="text-emerald-300 font-semibold">{staff.onSiteHours || 0}h On-Site</span>
                   </td>
                 </tr>
               </tfoot>
@@ -535,13 +573,15 @@ export default function AttendancePage() {
       {data && !loading && (
         <>
           {/* ── KPI Row ── */}
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <StatBadge icon="👥" label="Present" value={`${stats!.staffPresent}/${stats!.totalStaff}`}
               sub={`${stats!.attendanceRate}% attendance rate`} color="text-emerald-400" />
-            <StatBadge icon="🚫" label="Absent" value={stats!.staffAbsent}
-              sub="no sessions recorded" color="text-rose-400" />
+            <StatBadge icon="🏢" label="On-Site Hours" value={`${stats!.totalOnSiteHours || 0}h`}
+              sub={`${stats!.totalOnSiteSessions || 0} sessions`} color="text-emerald-400" />
+            <StatBadge icon="🏠" label="WFH Hours" value={`${stats!.totalWfhHours || 0}h`}
+              sub={`${stats!.totalWfhSessions || 0} sessions`} color="text-blue-400" />
             <StatBadge icon="⏱️" label="Total Hours" value={`${stats!.totalHoursAll}h`}
-              sub={`${stats!.totalSessions} sessions`} color="text-blue-400" />
+              sub={`${stats!.totalSessions} total sessions`} color="text-flora-sage" />
             <StatBadge icon="📅" label="Working Days" value={`${schedule!.expectedWorkingDays}d`}
               sub="expected this period" color="text-amber-400" />
             <StatBadge icon="✅" label="GPS Verified" value={stats!.totalVerified}

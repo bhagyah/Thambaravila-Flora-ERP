@@ -836,11 +836,14 @@ model WorkSession {
   geofenceId             String?   @map("geofence_id")
   geofence               Geofence? @relation(fields: [geofenceId], references: [id])
   locationVerified       Boolean   @default(false) @map("location_verified")
+  isWfh                  Boolean   @default(false) @map("is_wfh")
+  workMode               String    @default("ON_SITE") @map("work_mode") // "ON_SITE" | "WFH"
   deviceInfo             String?   @map("device_info") // JSON string: browser, OS, userAgent
   createdAt              DateTime  @default(now()) @map("created_at")
 
   @@index([userId])
   @@index([locationVerified])
+  @@index([isWfh])
   @@map("work_sessions")
 }
 
@@ -869,17 +872,20 @@ model DailyMealRequest {
 // ========================================
 
 /// Represents a named geographic zone used to validate attendance check-ins.
-/// IT/Owner managed. Supports multiple simultaneous active zones (e.g. shop + warehouse).
+/// IT/Owner managed. Supports multiple simultaneous active zones (e.g. shop + warehouse + WFH).
 /// NOTE: This is best-effort geofencing. Browser GPS can be spoofed by
 /// fake-location apps. This system prevents accidental off-site check-ins
 /// and provides a verifiable record, but is not tamper-proof.
 model Geofence {
   id              String   @id @default(cuid())
-  name            String // e.g. "Main Shop", "Warehouse"
+  name            String // e.g. "Main Shop", "Warehouse", "Prasangika Home Geozone"
   centerLatitude  Float    @map("center_latitude")
   centerLongitude Float    @map("center_longitude")
   radiusMeters    Int      @map("radius_meters") // The acceptance circle radius in metres
   isActive        Boolean  @default(true) @map("is_active") // IT can disable without deleting
+  isMain          Boolean  @default(false) @map("is_main") // Main workplace zone (applies to all roles)
+  zoneType        String   @default("MAIN") @map("zone_type") // "MAIN" | "WFH" | "ON_SITE"
+  allowedRoles    String?  @map("allowed_roles") // Comma-separated role names e.g. "Wedding Coordinator,Social Media Manager"
   createdById     String   @map("created_by_id")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
@@ -889,6 +895,8 @@ model Geofence {
   rejectedAttempts AttendanceAttemptLog[]
 
   @@index([isActive])
+  @@index([isMain])
+  @@index([zoneType])
   @@map("geofences")
 }
 

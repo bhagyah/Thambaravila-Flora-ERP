@@ -45,13 +45,13 @@ export async function GET() {
     // Active session for the current user
     const activeSession = await prisma.workSession.findFirst({
       where: { userId: session.user.id, endTime: null },
-      include: { geofence: { select: { name: true } } },
+      include: { geofence: { select: { name: true, zoneType: true, isMain: true } } },
     });
 
     // Session history — IT/Owner see all users, others see own only
     const sessions = await prisma.workSession.findMany({
       where: isPrivileged ? {} : { userId: session.user.id },
-      include: { geofence: { select: { name: true } } },
+      include: { geofence: { select: { name: true, zoneType: true, isMain: true } } },
       orderBy: { startTime: 'desc' },
       take: 50,
     });
@@ -83,6 +83,8 @@ export async function POST(req: Request) {
       deviceInfo,
     } = body;
 
+    const userRoleName = session.user?.role?.name || '';
+
     // ── Validate that coordinates were supplied ──────────────────────────
     if (latitude == null || longitude == null || accuracyMeters == null) {
       await logAttempt({
@@ -103,10 +105,6 @@ export async function POST(req: Request) {
     }
 
     // ── Reject weak GPS signals ──────────────────────────────────────────
-    // IMPORTANT: A large accuracy value means the device is LESS certain
-    // of its position. We reject high values to avoid accepting
-    // low-confidence positions that could place someone inside a zone
-    // when they are actually outside it.
     if (accuracyMeters > MAX_ACCURACY_METERS) {
       await logAttempt({
         userId: session.user.id,
@@ -128,11 +126,6 @@ export async function POST(req: Request) {
     }
 
     // ── Server-side Haversine geofence check ────────────────────────────
-    // NOTE: This is best-effort geofencing. Browser GPS coordinates can be
-    // spoofed by fake-location applications or modified device settings.
-    // This system prevents accidental/casual off-site check-ins and
-    // provides a verifiable record, but is NOT a guarantee against
-    // a deliberately spoofed location.
     const activeGeofences = await prisma.geofence.findMany({
       where: { isActive: true },
     });
@@ -140,6 +133,7 @@ export async function POST(req: Request) {
     let matchedGeofence: typeof activeGeofences[0] | null = null;
     let nearestGeofence: typeof activeGeofences[0] | null = null;
     let nearestDistance = Infinity;
+    let unauthorizedZoneInside: typeof activeGeofences[0] | null = null;
 
     for (const fence of activeGeofences) {
       const distM = haversineMeters(
@@ -152,17 +146,35 @@ export async function POST(req: Request) {
         nearestDistance = distM;
         nearestGeofence = fence;
       }
+
+      // Check if user is inside this fence
       if (distM <= fence.radiusMeters) {
-        matchedGeofence = fence;
-        break; // Inside at least one zone — no need to check further
+        // Verify role authorization for this zone
+        const isMainZone = fence.isMain || fence.zoneType === 'MAIN' || !fence.allowedRoles;
+        let roleAllowed = isMainZone;
+        if (!roleAllowed && fence.allowedRoles) {
+          const allowedList = fence.allowedRoles.split(',').map((r) => r.trim().toLowerCase());
+          roleAllowed = allowedList.includes(userRoleName.toLowerCase()) || userRoleName === 'Owner' || userRoleName === 'IT/Admin';
+        }
+
+        if (roleAllowed) {
+          matchedGeofence = fence;
+          break; // Found authorized matching zone
+        } else {
+          unauthorizedZoneInside = fence;
+        }
       }
     }
 
     if (!matchedGeofence) {
-      const reason =
-        activeGeofences.length === 0
-          ? 'No active attendance zones are configured. Please contact IT to set up a geofence.'
-          : `You are ${nearestDistance < 10000 ? Math.round(nearestDistance) + 'm away from' : 'outside'} the nearest approved attendance zone${nearestGeofence ? ` (${nearestGeofence.name})` : ''}.`;
+      let reason = '';
+      if (unauthorizedZoneInside) {
+        reason = `You are inside "${unauthorizedZoneInside.name}", but your role (${userRoleName}) is not authorized to clock in from this zone.`;
+      } else if (activeGeofences.length === 0) {
+        reason = 'No active attendance zones are configured. Please contact IT to set up a geofence.';
+      } else {
+        reason = `You are ${nearestDistance < 10000 ? Math.round(nearestDistance) + 'm away from' : 'outside'} the nearest approved attendance zone${nearestGeofence ? ` (${nearestGeofence.name})` : ''}.`;
+      }
 
       await logAttempt({
         userId: session.user.id,
@@ -171,7 +183,7 @@ export async function POST(req: Request) {
         latitude,
         longitude,
         accuracyMeters,
-        result: 'REJECTED_OUTSIDE_ZONE',
+        result: unauthorizedZoneInside ? 'REJECTED_UNAUTHORIZED_ROLE' : 'REJECTED_OUTSIDE_ZONE',
         rejectionReason: reason,
         nearestGeofenceId: nearestGeofence?.id || null,
         nearestDistanceM: nearestDistance === Infinity ? null : nearestDistance,
@@ -199,6 +211,9 @@ export async function POST(req: Request) {
     }
 
     // ── Process the verified clock-in or clock-out ───────────────────────
+    const isWfh = matchedGeofence.zoneType === 'WFH';
+    const workMode = isWfh ? 'WFH' : 'ON_SITE';
+
     if (action === 'CLOCK_IN') {
       const existing = await prisma.workSession.findFirst({
         where: { userId: session.user.id, endTime: null },
@@ -228,6 +243,8 @@ export async function POST(req: Request) {
           clockInAccuracyMeters: accuracyMeters,
           geofenceId: matchedGeofence.id,
           locationVerified: true,
+          isWfh,
+          workMode,
           deviceInfo: deviceInfo ? JSON.stringify(deviceInfo) : null,
         },
       });
@@ -253,6 +270,8 @@ export async function POST(req: Request) {
         entityId: workSession.id,
         details: {
           geofence: matchedGeofence.name,
+          isWfh,
+          workMode,
           latitude,
           longitude,
           accuracyMeters,
@@ -261,7 +280,13 @@ export async function POST(req: Request) {
       });
 
       return NextResponse.json(
-        { workSession, geofenceName: matchedGeofence.name, locationVerified: true },
+        {
+          workSession,
+          geofenceName: matchedGeofence.name,
+          isWfh,
+          workMode,
+          locationVerified: true,
+        },
         { status: 201 }
       );
     }
