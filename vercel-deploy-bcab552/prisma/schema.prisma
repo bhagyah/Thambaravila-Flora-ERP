@@ -977,19 +977,22 @@ model WorkScheduleConfig {
 }
 
 model LeaveRequest {
-  id            String    @id @default(cuid())
-  userId        String    @map("user_id")
-  userName      String    @map("user_name")
-  userRole      String    @map("user_role")
-  startDate     DateTime  @map("start_date")
-  endDate       DateTime  @map("end_date")
-  reason        String?
-  status        String    @default("Pending") // Pending, Approved, Rejected
-  requestedAt   DateTime  @default(now()) @map("requested_at")
-  approverId    String?   @map("approver_id")
-  approverName  String?   @map("approver_name")
-  decidedAt     DateTime? @map("decided_at")
-  decisionNotes String?   @map("decision_notes")
+  id             String    @id @default(cuid())
+  userId         String    @map("user_id")
+  userName       String    @map("user_name")
+  userRole       String    @map("user_role")
+  startDate      DateTime  @map("start_date")
+  endDate        DateTime  @map("end_date")
+  reason         String?
+  status         String    @default("Pending") // Pending, Assigned, Approved, Rejected
+  requestedAt    DateTime  @default(now()) @map("requested_at")
+  approverId     String?   @map("approver_id")
+  approverName   String?   @map("approver_name")
+  decidedAt      DateTime? @map("decided_at")
+  decisionNotes  String?   @map("decision_notes")
+  assignedById   String?   @map("assigned_by_id")
+  assignedByName String?   @map("assigned_by_name")
+  assignedByRole String?   @map("assigned_by_role")
 
   @@index([userId])
   @@index([status])

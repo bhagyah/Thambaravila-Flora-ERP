@@ -13,11 +13,13 @@ interface LeaveRequestItem {
   startDate: string;
   endDate: string;
   reason: string | null;
-  status: 'Pending' | 'Approved' | 'Rejected';
+  status: 'Pending' | 'Assigned' | 'Approved' | 'Rejected';
   requestedAt: string;
   approverName: string | null;
   decidedAt: string | null;
   decisionNotes: string | null;
+  assignedByName?: string | null;
+  assignedByRole?: string | null;
 }
 
 interface LeaveQuota {
@@ -35,6 +37,7 @@ export default function LeaveCalendarPage() {
   const [selectedEnd, setSelectedEnd] = useState<string | null>(null);
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [actingId, setActingId] = useState<string | null>(null);
 
   const [myRequests, setMyRequests] = useState<LeaveRequestItem[]>([]);
   const [quota, setQuota] = useState<LeaveQuota>({ annualAllowance: 21, usedDays: 0, remainingDays: 21 });
@@ -42,7 +45,7 @@ export default function LeaveCalendarPage() {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const roleName = session?.user?.role?.name || 'Staff';
-  const canApprove = roleName === 'Owner' || roleName === 'Accountant';
+  const canApprove = roleName === 'Owner' || roleName === 'Accountant' || roleName === 'IT/Admin';
 
   const fetchMyRequests = useCallback(async () => {
     setLoading(true);
@@ -69,6 +72,60 @@ export default function LeaveCalendarPage() {
       fetchMyRequests();
     }
   }, [status, router, fetchMyRequests]);
+
+  const handleAcceptLeave = async (id: string) => {
+    setActingId(id);
+    setFeedback(null);
+    try {
+      const res = await fetch(`/api/leave-requests/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'Accept' }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setFeedback({
+          type: 'success',
+          message: '🎉 Leave accepted successfully! Your calendar and attendance records are now updated.',
+        });
+        fetchMyRequests();
+      } else {
+        setFeedback({ type: 'error', message: data.error || 'Failed to accept leave' });
+      }
+    } catch {
+      setFeedback({ type: 'error', message: 'An error occurred while accepting leave.' });
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  const handleDeclineLeave = async (id: string) => {
+    const reasonText = prompt('Please provide a reason for declining (optional):');
+    if (reasonText === null) return;
+    setActingId(id);
+    setFeedback(null);
+    try {
+      const res = await fetch(`/api/leave-requests/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'Decline', decisionNotes: reasonText }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setFeedback({
+          type: 'success',
+          message: 'Assigned leave declined.',
+        });
+        fetchMyRequests();
+      } else {
+        setFeedback({ type: 'error', message: data.error || 'Failed to decline leave' });
+      }
+    } catch {
+      setFeedback({ type: 'error', message: 'An error occurred while declining leave.' });
+    } finally {
+      setActingId(null);
+    }
+  };
 
   // Calendar math
   const year = currentDate.getFullYear();
@@ -159,7 +216,7 @@ export default function LeaveCalendarPage() {
       } else {
         setFeedback({ type: 'error', message: data.error || 'Failed to submit leave request' });
       }
-    } catch (e) {
+    } catch {
       setFeedback({ type: 'error', message: 'An unexpected error occurred' });
     } finally {
       setSubmitting(false);
@@ -188,6 +245,8 @@ export default function LeaveCalendarPage() {
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
+  const assignedPendingRequests = myRequests.filter((r) => r.status === 'Assigned');
+
   return (
     <div className="min-h-screen bg-flora-darker p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Top Header & Annual Quota Banner */}
@@ -197,7 +256,7 @@ export default function LeaveCalendarPage() {
             <span>🏖️</span> Leave Management &amp; Calendar
           </h1>
           <p className="text-slate-400 text-xs mt-1">
-            Rules: Past days &amp; Today are disabled. Each employee receives 21 days annual leave allowance.
+            Rules: Past days &amp; Today are disabled for self-requests. Each employee receives 21 days annual allowance.
           </p>
         </div>
 
@@ -223,14 +282,80 @@ export default function LeaveCalendarPage() {
           {canApprove && (
             <Link
               href="/leave/approve"
-              className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold rounded-xl text-xs shadow transition flex items-center gap-1.5"
+              className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black rounded-xl text-xs shadow-lg transition flex items-center gap-1.5"
             >
-              <span>📋</span>
-              <span>Approval Queue</span>
+              <span>➕</span>
+              <span>Set Leave for Staff / Approvals</span>
             </Link>
           )}
         </div>
       </div>
+
+      {/* ── Assigned Leaves Awaiting Acceptance Banner ── */}
+      {assignedPendingRequests.length > 0 && (
+        <div className="bg-gradient-to-r from-blue-950/90 via-indigo-950/90 to-slate-900 border border-blue-600/50 p-5 rounded-2xl shadow-2xl space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm sm:text-base font-black text-blue-200 flex items-center gap-2">
+              <span className="animate-bounce">🔔</span>
+              <span>You have {assignedPendingRequests.length} Leave{assignedPendingRequests.length > 1 ? 's' : ''} Assigned by Management Awaiting Your Acceptance</span>
+            </h2>
+            <span className="px-2.5 py-1 rounded-full text-xs font-black bg-blue-500 text-slate-950">
+              Action Required
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            {assignedPendingRequests.map((req) => {
+              const reqDays = Math.ceil(Math.abs(new Date(req.endDate).getTime() - new Date(req.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+              return (
+                <div
+                  key={req.id}
+                  className="bg-slate-900/90 border border-blue-700/40 rounded-xl p-4 flex flex-col justify-between space-y-3 shadow-lg"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-start">
+                      <div className="font-mono text-sm font-black text-emerald-400">
+                        🗓️ {req.startDate.split('T')[0]} {req.startDate !== req.endDate ? `→ ${req.endDate.split('T')[0]}` : ''}
+                      </div>
+                      <span className="text-xs font-bold text-slate-300 bg-slate-800 px-2 py-0.5 rounded">
+                        {reqDays} Day{reqDays > 1 ? 's' : ''}
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-slate-400">
+                      Assigned by: <span className="font-bold text-amber-300">{req.assignedByName || 'Management'} ({req.assignedByRole || 'Accountant'})</span>
+                    </div>
+
+                    {req.reason && (
+                      <p className="text-xs text-slate-300 bg-slate-950 p-2 rounded-lg italic border border-slate-800">
+                        "{req.reason}"
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2 pt-2 border-t border-slate-800">
+                    <button
+                      onClick={() => handleAcceptLeave(req.id)}
+                      disabled={actingId === req.id}
+                      className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-lg text-xs transition shadow flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    >
+                      <span>✅</span>
+                      <span>Accept Leave</span>
+                    </button>
+                    <button
+                      onClick={() => handleDeclineLeave(req.id)}
+                      disabled={actingId === req.id}
+                      className="py-2.5 px-4 bg-rose-950/80 hover:bg-rose-900 border border-rose-700 text-rose-300 font-bold rounded-lg text-xs transition disabled:opacity-50"
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {feedback && (
         <div
@@ -313,8 +438,9 @@ export default function LeaveCalendarPage() {
 
               // Existing requests on this day
               const dayReqs = getRequestsForDate(dateStr);
-              const pendingReq = dayReqs.find((r) => r.status === 'Pending');
+              const assignedReq = dayReqs.find((r) => r.status === 'Assigned');
               const approvedReq = dayReqs.find((r) => r.status === 'Approved');
+              const pendingReq = dayReqs.find((r) => r.status === 'Pending');
               const rejectedReq = dayReqs.find((r) => r.status === 'Rejected');
 
               return (
@@ -346,17 +472,22 @@ export default function LeaveCalendarPage() {
 
                   {/* Indicators for existing requests */}
                   <div className="space-y-0.5">
-                    {approvedReq && (
+                    {assignedReq && (
+                      <div className="text-[9px] bg-blue-950 text-blue-300 border border-blue-700/50 px-1 py-0.5 rounded truncate font-bold">
+                        🔔 Assigned
+                      </div>
+                    )}
+                    {approvedReq && !assignedReq && (
                       <div className="text-[9px] bg-emerald-950 text-emerald-300 border border-emerald-700/50 px-1 py-0.5 rounded truncate font-semibold">
                         ✓ Approved
                       </div>
                     )}
-                    {pendingReq && !approvedReq && (
+                    {pendingReq && !approvedReq && !assignedReq && (
                       <div className="text-[9px] bg-amber-950 text-amber-300 border border-amber-700/50 px-1 py-0.5 rounded truncate font-semibold">
                         ⏳ Pending
                       </div>
                     )}
-                    {rejectedReq && !approvedReq && !pendingReq && (
+                    {rejectedReq && !approvedReq && !pendingReq && !assignedReq && (
                       <div className="text-[9px] bg-rose-950 text-rose-300 border border-rose-700/50 px-1 py-0.5 rounded truncate font-semibold">
                         ✕ Rejected
                       </div>
@@ -368,8 +499,9 @@ export default function LeaveCalendarPage() {
           </div>
 
           <div className="text-xs text-slate-400 flex flex-wrap gap-4 pt-2 border-t border-flora-border">
-            <span>⛔ <b>Past days &amp; Today</b> are disabled. Selectable dates start from Tomorrow.</span>
+            <span>⛔ <b>Past days &amp; Today</b> are disabled for self-requests.</span>
             <span>💡 <b>Annual Quota:</b> 21 Days / Employee / Year.</span>
+            <span>🔔 <b>Assigned leaves</b> from Accountant/Management can be accepted directly.</span>
           </div>
         </div>
 
@@ -464,7 +596,11 @@ export default function LeaveCalendarPage() {
                 {myRequests.map((req) => (
                   <div
                     key={req.id}
-                    className="bg-flora-darker border border-flora-border rounded-xl p-3 text-xs space-y-1.5"
+                    className={`bg-flora-darker border rounded-xl p-3 text-xs space-y-2 ${
+                      req.status === 'Assigned'
+                        ? 'border-blue-700/60 bg-blue-950/20 shadow-md'
+                        : 'border-flora-border'
+                    }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-200">
@@ -474,18 +610,44 @@ export default function LeaveCalendarPage() {
                         className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                           req.status === 'Approved'
                             ? 'bg-emerald-950 text-emerald-300 border border-emerald-700/50'
+                            : req.status === 'Assigned'
+                            ? 'bg-blue-950 text-blue-300 border border-blue-700/50'
                             : req.status === 'Rejected'
                             ? 'bg-rose-950 text-rose-300 border border-rose-700/50'
                             : 'bg-amber-950 text-amber-300 border border-amber-700/50'
                         }`}
                       >
-                        {req.status}
+                        {req.status === 'Assigned' ? '🔔 Assigned (Action Required)' : req.status}
                       </span>
                     </div>
 
                     {req.reason && <p className="text-slate-400 text-[11px] italic">"{req.reason}"</p>}
 
-                    {req.status !== 'Pending' && req.approverName && (
+                    {req.status === 'Assigned' && (
+                      <div className="space-y-2 pt-1 border-t border-blue-900/40">
+                        <div className="text-[10px] text-slate-400">
+                          Assigned by: <span className="text-amber-300 font-bold">{req.assignedByName || 'Management'} ({req.assignedByRole || 'Accountant'})</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleAcceptLeave(req.id)}
+                            disabled={actingId === req.id}
+                            className="flex-1 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-lg text-xs transition"
+                          >
+                            ✓ Accept Leave
+                          </button>
+                          <button
+                            onClick={() => handleDeclineLeave(req.id)}
+                            disabled={actingId === req.id}
+                            className="px-3 py-1.5 bg-rose-950/80 hover:bg-rose-900 border border-rose-700 text-rose-300 font-bold rounded-lg text-xs transition"
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {req.status !== 'Pending' && req.status !== 'Assigned' && req.approverName && (
                       <div className="pt-1.5 border-t border-flora-border/50 text-[10px] text-slate-500 flex justify-between">
                         <span>Decided by: {req.approverName}</span>
                         {req.decisionNotes && <span className="text-slate-300">Note: {req.decisionNotes}</span>}

@@ -224,6 +224,15 @@ export async function GET(req: Request) {
 
     const standardShiftMinutes = Math.round(hoursPerDay * 60);
 
+    // ── Fetch approved leaves in date range ───────────────────────────────────
+    const approvedLeaves = await prisma.leaveRequest.findMany({
+      where: {
+        status: 'Approved',
+        startDate: { lte: toDate },
+        endDate: { gte: fromDate },
+      },
+    });
+
     // ── Build per-staff summary ──────────────────────────────────────────────
     const staffSummary = allUsers.map((user) => {
       const rec = byUser[user.id];
@@ -235,16 +244,29 @@ export async function GET(req: Request) {
       const onSiteMinutes = rec?.onSiteMinutes || 0;
       const onSiteHours = Math.round((onSiteMinutes / 60) * 10) / 10;
 
+      // User's approved leaves
+      const userLeaves = approvedLeaves.filter((l) => l.userId === user.id);
+      const leaveDates = new Set<string>();
+      userLeaves.forEach((l) => {
+        const cur = new Date(l.startDate);
+        const end = new Date(l.endDate);
+        while (cur <= end) {
+          if (cur >= fromDate && cur <= toDate) {
+            leaveDates.add(cur.toISOString().slice(0, 10));
+          }
+          cur.setDate(cur.getDate() + 1);
+        }
+      });
+
       const daysPresent = rec ? rec.daysPresent.size : 0;
-      const daysAbsent = Math.max(0, expectedWorkingDays - daysPresent);
+      const daysOnLeave = leaveDates.size;
+      const daysAbsent = Math.max(0, expectedWorkingDays - daysPresent - daysOnLeave);
       const compliancePct =
         expectedHoursPerStaff > 0
           ? Math.min(100, Math.round((actualMinutes / (expectedHoursPerStaff * 60)) * 100))
           : 0;
 
       // ── Calculate daily breakdown and overtime ────────────────────────────
-      // For each day worked: if staff completes 8H standard shift at Main Workplace,
-      // any extra time beyond standard shift hours on that day counts as Overtime.
       let totalOvertimeMinutes = 0;
       let totalUndertimeMinutes = 0;
 
@@ -255,19 +277,16 @@ export async function GET(req: Request) {
               const dayTotal = day.totalMinutes;
               const dayMain = day.mainMinutes;
               const dayWfh = day.wfhMinutes;
+              const isLeaveDay = leaveDates.has(date);
 
               let dayOvertime = 0;
               let dayUndertime = 0;
 
-              // If staff completed the required standard shift hours at the Main Workplace (or total time with Main workplace work):
               if (dayMain >= standardShiftMinutes) {
-                // Completed full standard shift at Main Workplace -> all extra time is overtime
                 dayOvertime = Math.max(0, dayTotal - standardShiftMinutes);
               } else if (dayTotal > standardShiftMinutes && dayMain > 0) {
-                // Completed standard shift with combination of Main workplace time -> excess is overtime
                 dayOvertime = Math.max(0, dayTotal - standardShiftMinutes);
-              } else if (dayTotal < standardShiftMinutes) {
-                // Below standard daily shift
+              } else if (dayTotal < standardShiftMinutes && !isLeaveDay) {
                 dayUndertime = standardShiftMinutes - dayTotal;
               }
 
@@ -286,6 +305,7 @@ export async function GET(req: Request) {
                 overtimeMinutes: dayOvertime,
                 overtimeHours: Math.round((dayOvertime / 60) * 10) / 10,
                 undertimeMinutes: dayUndertime,
+                isOnLeave: isLeaveDay,
                 compliancePct: Math.min(100, Math.round((dayTotal / (hoursPerDay * 60)) * 100)),
               };
             })
@@ -310,6 +330,7 @@ export async function GET(req: Request) {
         onSiteHours,
         // Days
         daysPresent,
+        daysOnLeave,
         daysAbsent,
         expectedWorkingDays,
         // Compliance

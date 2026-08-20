@@ -220,10 +220,13 @@ export default function Sidebar() {
     [dashboardAbbr, dashboardAccent, dashboardHref, dashboardLabel, isActive, roleName]
   );
 
+  const canManageLeaves = isOwner || roleName === 'Accountant' || isIT;
+
   const toolLinks = [
     { href: '/settings/2fa', label: '2FA Security', abbr: '2F', accent: 'violet' as Accent, active: isActive('/settings/2fa') },
     { href: '/chat', label: 'Team Chat', abbr: 'CH', accent: 'teal' as Accent, active: isActive('/chat') },
-    { href: '/leave', label: 'Leave Calendar', abbr: 'LV', accent: 'amber' as Accent, active: isActive('/leave') },
+    { href: '/leave', label: 'My Leave Calendar', abbr: 'LV', accent: 'amber' as Accent, active: isActive('/leave') },
+    ...(canManageLeaves ? [{ href: '/leave/approve', label: 'Leave Assign & Approvals', abbr: 'LA', accent: 'amber' as Accent, active: isActive('/leave/approve') }] : []),
     { href: '/attendance', label: 'Attendance', abbr: 'AT', accent: 'sage' as Accent, active: isActive('/attendance') },
     ...(canViewLabourOperations ? [{ href: '/attendance/labour', label: 'Labour Attendance & Food', abbr: 'LF', accent: 'green' as Accent, active: isActive('/attendance/labour') }] : []),
     { href: '/work-sessions', label: 'Clock In / Out', abbr: 'TS', accent: 'green' as Accent, active: isActive('/work-sessions') },

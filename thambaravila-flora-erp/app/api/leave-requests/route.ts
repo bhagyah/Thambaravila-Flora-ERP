@@ -18,29 +18,27 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const statusFilter = searchParams.get('status');
   const scope = searchParams.get('scope'); // 'mine' or default role-scoped
+  const targetUserId = searchParams.get('userId');
 
   try {
     let whereClause: any = {};
 
     if (scope === 'mine') {
       whereClause.userId = userId;
-    } else if (roleName === 'Owner') {
-      // Owner sees all leave requests across the company
+    } else if (targetUserId) {
+      whereClause.userId = targetUserId;
+    } else if (roleName === 'Owner' || roleName === 'IT/Admin') {
+      // Owner & Admin see all leave requests across the company
       whereClause = {};
     } else if (roleName === 'Accountant') {
-      // Accountant sees their own requests AND requests from non-Accountant roles needing approval
-      whereClause = {
-        OR: [
-          { userId },
-          { userRole: { not: 'Accountant' } },
-        ],
-      };
+      // Accountant sees all requests across the company (for management and approval)
+      whereClause = {};
     } else {
       // Regular staff see only their own leave requests
       whereClause.userId = userId;
     }
 
-    if (statusFilter && ['Pending', 'Approved', 'Rejected'].includes(statusFilter)) {
+    if (statusFilter && ['Pending', 'Assigned', 'Approved', 'Rejected'].includes(statusFilter)) {
       whereClause.status = statusFilter;
     }
 
@@ -57,7 +55,7 @@ export async function GET(req: NextRequest) {
     const userYearlyRequests = await prisma.leaveRequest.findMany({
       where: {
         userId,
-        status: { in: ['Pending', 'Approved'] },
+        status: { in: ['Pending', 'Assigned', 'Approved'] },
         startDate: { gte: yearStart, lte: yearEnd },
       },
     });
@@ -73,8 +71,36 @@ export async function GET(req: NextRequest) {
 
     const remainingDays = Math.max(0, ANNUAL_LEAVE_ALLOWANCE - usedDays);
 
+    // Fetch active staff list for Accountant and Owner so they can assign leave
+    let allStaff: Array<{ id: string; name: string; email: string; roleName: string }> = [];
+    if (roleName === 'Accountant' || roleName === 'Owner' || roleName === 'IT/Admin') {
+      const users = await prisma.user.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: { select: { name: true } },
+        },
+        orderBy: { name: 'asc' },
+      });
+      allStaff = users.map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        roleName: u.role.name,
+      }));
+    }
+
+    // Check count of assigned leaves waiting for current user's acceptance
+    const assignedPendingCount = requests.filter(
+      (r) => r.userId === userId && r.status === 'Assigned'
+    ).length;
+
     return NextResponse.json({
       requests,
+      allStaff,
+      assignedPendingCount,
       quota: {
         annualAllowance: ANNUAL_LEAVE_ALLOWANCE,
         usedDays,
@@ -87,7 +113,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/leave-requests - Create a new leave request with strict date & 21-day annual quota checks
+// POST /api/leave-requests - Create a new leave request or assign leave to other roles (Accountant/Owner)
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) {
@@ -96,7 +122,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { startDate, endDate, reason } = body;
+    const { startDate, endDate, reason, targetUserId } = body;
 
     if (!startDate || !endDate) {
       return NextResponse.json({ error: 'Start date and end date are required' }, { status: 400 });
@@ -113,7 +139,82 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'End date cannot be before start date' }, { status: 400 });
     }
 
-    // RULE 1 & 2: Disallow Past Days and Today
+    const requestedDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const callerRole = session.user.role?.name || 'Staff';
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // CASE 1: Accountant or Owner setting / assigning a leave for another staff member
+    // ──────────────────────────────────────────────────────────────────────────
+    if (targetUserId && targetUserId !== session.user.id) {
+      if (callerRole !== 'Accountant' && callerRole !== 'Owner' && callerRole !== 'IT/Admin') {
+        return NextResponse.json(
+          { error: 'Only Accountant, Owner, or Admin can assign leaves to other staff members.' },
+          { status: 403 }
+        );
+      }
+
+      const targetUser = await prisma.user.findUnique({
+        where: { id: targetUserId },
+        include: { role: true },
+      });
+
+      if (!targetUser) {
+        return NextResponse.json({ error: 'Selected staff member not found' }, { status: 404 });
+      }
+
+      const targetUserRole = targetUser.role?.name || 'Staff';
+
+      const leaveRequest = await prisma.leaveRequest.create({
+        data: {
+          userId: targetUser.id,
+          userName: targetUser.name,
+          userRole: targetUserRole,
+          startDate: start,
+          endDate: end,
+          reason: reason?.trim() || `Assigned by ${session.user.name} (${callerRole})`,
+          status: 'Assigned',
+          assignedById: session.user.id,
+          assignedByName: session.user.name,
+          assignedByRole: callerRole,
+          approverId: session.user.id,
+          approverName: session.user.name,
+        },
+      });
+
+      // Notification to the target employee
+      await prisma.notification.create({
+        data: {
+          title: `Leave Assigned by ${callerRole}`,
+          message: `${session.user.name} (${callerRole}) assigned a ${requestedDays}-day leave for you (${start.toISOString().split('T')[0]} to ${end.toISOString().split('T')[0]}). Please review and accept.`,
+          type: 'WARNING',
+          userId: targetUser.id,
+          link: '/leave',
+        },
+      });
+
+      // Audit log
+      await createAuditLog({
+        userId: session.user.id,
+        action: 'LEAVE_ASSIGNED',
+        entityType: 'leave_request',
+        entityId: leaveRequest.id,
+        details: {
+          targetUserId: targetUser.id,
+          targetUserName: targetUser.name,
+          targetUserRole,
+          startDate: start.toISOString(),
+          endDate: end.toISOString(),
+          requestedDays,
+          reason: reason || null,
+        },
+      });
+
+      return NextResponse.json({ request: leaveRequest, assigned: true }, { status: 201 });
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // CASE 2: Self-requested leave by employee
+    // ──────────────────────────────────────────────────────────────────────────
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -122,14 +223,12 @@ export async function POST(req: NextRequest) {
 
     if (reqStart <= today) {
       return NextResponse.json(
-        { error: 'Leave requests cannot be made for today or past dates. Earliest selectable date is tomorrow.' },
+        { error: 'Self leave requests cannot be made for today or past dates. Earliest selectable date is tomorrow.' },
         { status: 400 }
       );
     }
 
-    // RULE 3: 21 Days Annual Quota Limit Validation
-    const requestedDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-
+    // 21 Days Annual Quota Limit Validation
     const currentYear = start.getFullYear();
     const yearStart = new Date(currentYear, 0, 1);
     const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59);
@@ -139,7 +238,7 @@ export async function POST(req: NextRequest) {
     const existingYearlyRequests = await prisma.leaveRequest.findMany({
       where: {
         userId,
-        status: { in: ['Pending', 'Approved'] },
+        status: { in: ['Pending', 'Assigned', 'Approved'] },
         startDate: { gte: yearStart, lte: yearEnd },
       },
     });

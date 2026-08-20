@@ -17,6 +17,7 @@ interface DailyEntry {
   overtimeMinutes?: number;
   overtimeHours?: number;
   undertimeMinutes?: number;
+  isOnLeave?: boolean;
   compliancePct: number;
 }
 
@@ -47,6 +48,7 @@ interface StaffRecord {
   onSiteMinutes?: number;
   onSiteHours?: number;
   daysPresent: number;
+  daysOnLeave?: number;
   daysAbsent: number;
   expectedWorkingDays: number;
   compliancePct: number;
@@ -343,7 +345,11 @@ function StaffDetail({ staff, schedule }: { staff: StaffRecord; schedule: Schedu
                       </td>
                       <td className="p-2.5 text-right text-slate-400">{d.expectedHours}h</td>
                       <td className="p-2.5 text-right">
-                        {hasOvertime ? (
+                        {d.isOnLeave ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-950 text-blue-300 border border-blue-700/50">
+                            🌴 Approved Leave
+                          </span>
+                        ) : hasOvertime ? (
                           <span className="text-purple-400 font-bold">
                             +{fmt.duration(d.overtimeMinutes)} OT
                           </span>
@@ -695,9 +701,14 @@ export default function AttendancePage() {
                           {staff.daysPresent}
                           <span className="text-slate-500 font-normal text-xs">/{staff.expectedWorkingDays}</span>
                         </div>
-                        {staff.daysAbsent > 0 && (
-                          <div className="text-[10px] text-rose-400">{staff.daysAbsent} absent</div>
-                        )}
+                        <div className="flex flex-col text-[10px]">
+                          {staff.daysOnLeave != null && staff.daysOnLeave > 0 && (
+                            <span className="text-blue-400 font-medium">{staff.daysOnLeave}d on leave</span>
+                          )}
+                          {staff.daysAbsent > 0 && (
+                            <span className="text-rose-400">{staff.daysAbsent} absent</span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Hours */}
