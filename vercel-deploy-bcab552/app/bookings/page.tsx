@@ -68,6 +68,7 @@ export default function BookingsPage() {
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('ALL');
   const [showModal, setShowModal] = useState(false);
   const [pendingStages, setPendingStages] = useState<Record<string, string>>({});
+  const [reopenStages, setReopenStages] = useState<Record<string, string>>({});
   const [deletingBooking, setDeletingBooking] = useState<any>(null);
   const [deleteReason, setDeleteReason] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -89,14 +90,14 @@ export default function BookingsPage() {
 
       const data = await res.json();
       if (res.ok) {
-        alert(data.message);
+        alert(data.message || 'Deletion request submitted for Owner approval');
         setDeletingBooking(null);
         setDeleteReason('');
         fetchBookings();
       } else {
-        alert(data.error || 'Failed to process deletion request');
+        alert(data.error || 'Failed to submit deletion request');
       }
-    } catch (e) {
+    } catch (err) {
       alert('Error processing deletion request');
     } finally {
       setIsDeleting(false);
@@ -113,6 +114,8 @@ export default function BookingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'DECLINE_QUOTE',
+          bookingStatus: 'CANCELLED',
+          confirmationStatus: 'NOT_CONFIRMED',
           quoteOutcomeReason: reason.trim() || 'Quote declined',
         }),
       });
@@ -125,6 +128,42 @@ export default function BookingsPage() {
       }
     } catch (e) {
       alert('Failed to decline quote');
+    }
+  };
+
+  const handleReopenQuote = async (booking: Booking, targetStageKey: string = 'IN_DESIGN') => {
+    const stageNames: Record<string, string> = {
+      INQUIRY: '1. Initial Meeting & Consultation',
+      IN_DESIGN: '2. Design & Quote Stage',
+      CONFIRMED: '3. Approved & Confirmed',
+      IN_PRODUCTION: '4. Flower Prep',
+      DELIVERED: '5. On-Site Setup',
+      COMPLETED: '6. Event Completed',
+    };
+
+    if (!window.confirm(`Reopen quotation for ${booking.customer.name} (${booking.id}) and move to "${stageNames[targetStageKey] || targetStageKey}"?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/bookings/${booking.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'REOPEN_QUOTE',
+          bookingStatus: targetStageKey,
+          confirmationStatus: ['CONFIRMED', 'IN_PRODUCTION', 'DELIVERED', 'COMPLETED'].includes(targetStageKey) ? 'CONFIRMED' : 'PENDING',
+        }),
+      });
+
+      if (res.ok) {
+        fetchBookings();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to reopen quote');
+      }
+    } catch (e) {
+      alert('Failed to reopen quote');
     }
   };
 
@@ -383,107 +422,133 @@ export default function BookingsPage() {
                         </span>
                       </td>
                       <td className="p-3.5">
-                        {(() => {
-                          const stagesList = ['INQUIRY', 'IN_DESIGN', 'CONFIRMED', 'IN_PRODUCTION', 'DELIVERED', 'COMPLETED', 'CANCELLED'];
-                          const currentIdx = stagesList.indexOf(b.bookingStatus);
-                          const activeVal = pendingStages[b.id] || b.bookingStatus;
-                          const isPending = pendingStages[b.id] && pendingStages[b.id] !== b.bookingStatus;
+                        {b.bookingStatus === 'CANCELLED' ? (
+                          <div className="flex flex-col gap-1.5 min-w-[170px]">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-rose-950/80 text-rose-300 border border-rose-800 text-center">
+                              ✕ Quote Declined
+                            </span>
+                            <select
+                              value={reopenStages[b.id] || 'IN_DESIGN'}
+                              onChange={(e) => setReopenStages(prev => ({ ...prev, [b.id]: e.target.value }))}
+                              className="bg-slate-950 border border-slate-700 rounded-lg text-[10px] font-bold p-1 text-slate-100 focus:outline-none focus:border-amber-500"
+                            >
+                              <option value="INQUIRY">1. Initial Meeting</option>
+                              <option value="IN_DESIGN">2. Design &amp; Quote</option>
+                              <option value="CONFIRMED">3. Approved &amp; Confirmed</option>
+                              <option value="IN_PRODUCTION">4. Flower Prep</option>
+                              <option value="DELIVERED">5. On-Site Setup</option>
+                              <option value="COMPLETED">6. Event Completed</option>
+                            </select>
+                            <button
+                              onClick={() => handleReopenQuote(b, reopenStages[b.id] || 'IN_DESIGN')}
+                              className="py-1 px-2 bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-500 hover:to-rose-500 text-white font-extrabold text-[10px] rounded-md shadow transition flex items-center justify-center space-x-1"
+                            >
+                              <span>🔄</span>
+                              <span>Reopen to Selected Stage</span>
+                            </button>
+                          </div>
+                        ) : (
+                          (() => {
+                            const stagesList = ['INQUIRY', 'IN_DESIGN', 'CONFIRMED', 'IN_PRODUCTION', 'DELIVERED', 'COMPLETED'];
+                            const currentIdx = stagesList.indexOf(b.bookingStatus);
+                            const activeVal = pendingStages[b.id] || b.bookingStatus;
+                            const isPending = pendingStages[b.id] && pendingStages[b.id] !== b.bookingStatus;
 
-                          return (
-                            <div className="flex flex-col gap-1 min-w-[170px]">
-                              <select
-                                value={activeVal}
-                                onChange={(e) => setPendingStages(prev => ({ ...prev, [b.id]: e.target.value }))}
-                                className={`bg-slate-950 border rounded-lg text-[11px] font-extrabold p-1 focus:outline-none ${
-                                  isPending ? 'border-amber-400 text-amber-200 ring-1 ring-amber-400/50' : 'border-slate-700 text-slate-100'
-                                }`}
-                              >
-                                <option value="INQUIRY" disabled={userRole !== 'Owner' && Math.abs(0 - currentIdx) > 1}>
-                                  1. Initial Meeting {userRole !== 'Owner' && Math.abs(0 - currentIdx) > 1 ? '🔒' : ''}
-                                </option>
-                                <option value="IN_DESIGN" disabled={userRole !== 'Owner' && Math.abs(1 - currentIdx) > 1}>
-                                  2. Design &amp; Quote {userRole !== 'Owner' && Math.abs(1 - currentIdx) > 1 ? '🔒' : ''}
-                                </option>
-                                <option value="CONFIRMED" disabled={userRole !== 'Owner' && Math.abs(2 - currentIdx) > 1}>
-                                  3. Approved &amp; Confirmed {userRole !== 'Owner' && Math.abs(2 - currentIdx) > 1 ? '🔒' : ''}
-                                </option>
-                                <option value="IN_PRODUCTION" disabled={userRole !== 'Owner' && Math.abs(3 - currentIdx) > 1}>
-                                  4. Flower Prep {userRole !== 'Owner' && Math.abs(3 - currentIdx) > 1 ? '🔒' : ''}
-                                </option>
-                                <option value="DELIVERED" disabled={userRole !== 'Owner' && Math.abs(4 - currentIdx) > 1}>
-                                  5. On-Site Setup {userRole !== 'Owner' && Math.abs(4 - currentIdx) > 1 ? '🔒' : ''}
-                                </option>
-                                <option value="COMPLETED" disabled={userRole !== 'Owner' && Math.abs(5 - currentIdx) > 1}>
-                                  6. Event Completed {userRole !== 'Owner' && Math.abs(5 - currentIdx) > 1 ? '🔒' : ''}
-                                </option>
-                                <option value="CANCELLED">Quote Declined / Cancelled</option>
-                              </select>
-
-                              <div className="flex flex-wrap gap-1">
-                                <span
-                                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                                    b.confirmationStatus === 'CONFIRMED'
-                                      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                                      : b.confirmationStatus === 'NOT_CONFIRMED'
-                                      ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                                      : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                            return (
+                              <div className="flex flex-col gap-1 min-w-[170px]">
+                                <select
+                                  value={activeVal}
+                                  onChange={(e) => setPendingStages(prev => ({ ...prev, [b.id]: e.target.value }))}
+                                  className={`bg-slate-950 border rounded-lg text-[11px] font-extrabold p-1 focus:outline-none ${
+                                    isPending ? 'border-amber-400 text-amber-200 ring-1 ring-amber-400/50' : 'border-slate-700 text-slate-100'
                                   }`}
                                 >
-                                  {b.confirmationStatus === 'CONFIRMED'
-                                    ? 'Confirmed'
-                                    : b.confirmationStatus === 'NOT_CONFIRMED'
-                                    ? 'Not confirmed'
-                                    : 'Pending'}
-                                </span>
-                              </div>
+                                  <option value="INQUIRY" disabled={userRole !== 'Owner' && Math.abs(0 - currentIdx) > 1}>
+                                    1. Initial Meeting {userRole !== 'Owner' && Math.abs(0 - currentIdx) > 1 ? '🔒' : ''}
+                                  </option>
+                                  <option value="IN_DESIGN" disabled={userRole !== 'Owner' && Math.abs(1 - currentIdx) > 1}>
+                                    2. Design &amp; Quote {userRole !== 'Owner' && Math.abs(1 - currentIdx) > 1 ? '🔒' : ''}
+                                  </option>
+                                  <option value="CONFIRMED" disabled={userRole !== 'Owner' && Math.abs(2 - currentIdx) > 1}>
+                                    3. Approved &amp; Confirmed {userRole !== 'Owner' && Math.abs(2 - currentIdx) > 1 ? '🔒' : ''}
+                                  </option>
+                                  <option value="IN_PRODUCTION" disabled={userRole !== 'Owner' && Math.abs(3 - currentIdx) > 1}>
+                                    4. Flower Prep {userRole !== 'Owner' && Math.abs(3 - currentIdx) > 1 ? '🔒' : ''}
+                                  </option>
+                                  <option value="DELIVERED" disabled={userRole !== 'Owner' && Math.abs(4 - currentIdx) > 1}>
+                                    5. On-Site Setup {userRole !== 'Owner' && Math.abs(4 - currentIdx) > 1 ? '🔒' : ''}
+                                  </option>
+                                  <option value="COMPLETED" disabled={userRole !== 'Owner' && Math.abs(5 - currentIdx) > 1}>
+                                    6. Event Completed {userRole !== 'Owner' && Math.abs(5 - currentIdx) > 1 ? '🔒' : ''}
+                                  </option>
+                                </select>
 
-                              {isPending && (
-                                <div className="flex gap-1">
-                                  <button
-                                    onClick={async () => {
-                                      const newStage = pendingStages[b.id];
-                                      try {
-                                        const res = await fetch(`/api/bookings/${b.id}`, {
-                                          method: 'PATCH',
-                                          headers: { 'Content-Type': 'application/json' },
-                                          body: JSON.stringify({ bookingStatus: newStage }),
-                                        });
-                                        if (res.ok) {
-                                          fetchBookings();
-                                          setPendingStages(prev => {
-                                            const copy = { ...prev };
-                                            delete copy[b.id];
-                                            return copy;
-                                          });
-                                        } else {
-                                          const d = await res.json();
-                                          alert(d.error || 'Failed to update stage');
-                                        }
-                                      } catch (err) {
-                                        alert('Failed to update stage');
-                                      }
-                                    }}
-                                    className="flex-1 py-0.5 text-[10px] font-black bg-emerald-600 hover:bg-emerald-500 text-white rounded shadow"
+                                <div className="flex flex-wrap gap-1">
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                      b.confirmationStatus === 'CONFIRMED'
+                                        ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                                        : b.confirmationStatus === 'NOT_CONFIRMED'
+                                        ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                                        : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                                    }`}
                                   >
-                                    ✓ Approve
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setPendingStages(prev => {
-                                        const copy = { ...prev };
-                                        delete copy[b.id];
-                                        return copy;
-                                      });
-                                    }}
-                                    className="px-1.5 py-0.5 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 rounded"
-                                  >
-                                    ✕
-                                  </button>
+                                    {b.confirmationStatus === 'CONFIRMED'
+                                      ? 'Confirmed'
+                                      : b.confirmationStatus === 'NOT_CONFIRMED'
+                                      ? 'Not confirmed'
+                                      : 'Pending'}
+                                  </span>
                                 </div>
-                              )}
-                            </div>
-                          );
-                        })()}
+
+                                {isPending && (
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={async () => {
+                                        const newStage = pendingStages[b.id];
+                                        try {
+                                          const res = await fetch(`/api/bookings/${b.id}`, {
+                                            method: 'PATCH',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ bookingStatus: newStage }),
+                                          });
+                                          if (res.ok) {
+                                            fetchBookings();
+                                            setPendingStages(prev => {
+                                              const copy = { ...prev };
+                                              delete copy[b.id];
+                                              return copy;
+                                            });
+                                          } else {
+                                            const d = await res.json();
+                                            alert(d.error || 'Failed to update stage');
+                                          }
+                                        } catch (err) {
+                                          alert('Failed to update stage');
+                                        }
+                                      }}
+                                      className="flex-1 py-0.5 text-[10px] font-black bg-emerald-600 hover:bg-emerald-500 text-white rounded shadow"
+                                    >
+                                      ✓ Approve
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setPendingStages(prev => {
+                                          const copy = { ...prev };
+                                          delete copy[b.id];
+                                          return copy;
+                                        });
+                                      }}
+                                      className="px-1.5 py-0.5 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 rounded"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()
+                        )}
                       </td>
                       <td className="p-3.5">
                         <span className={`font-semibold ${b.daysUntilWedding < 14 ? 'text-rose-300' : 'text-slate-200'}`}>
@@ -503,12 +568,21 @@ export default function BookingsPage() {
                             View Quotation
                           </a>
                         )}
-                        <button
-                          onClick={() => handleDeclineQuote(b)}
-                          className="inline-block px-2.5 py-1 bg-rose-950/70 hover:bg-rose-900 text-rose-200 font-semibold rounded text-[11px] border border-rose-700/50"
-                        >
-                          Mark Quote Declined
-                        </button>
+                        {b.bookingStatus === 'CANCELLED' ? (
+                          <button
+                            onClick={() => handleReopenQuote(b)}
+                            className="inline-block px-2.5 py-1 bg-amber-950/70 hover:bg-amber-900 text-amber-200 font-semibold rounded text-[11px] border border-amber-700/50"
+                          >
+                            🔄 Reopen Quote
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleDeclineQuote(b)}
+                            className="inline-block px-2.5 py-1 bg-rose-950/70 hover:bg-rose-900 text-rose-200 font-semibold rounded text-[11px] border border-rose-700/50"
+                          >
+                            Mark Quote Declined
+                          </button>
+                        )}
                         <div>
                           {(b as any).hasPendingDeletion ? (
                             <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-200 border border-amber-500/30">

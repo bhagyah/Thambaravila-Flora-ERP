@@ -322,7 +322,8 @@ export async function PATCH(
           await prisma.paymentStage.create({
             data: {
               bookingId: id,
-              stageType: 'New changes Dues' as any,
+              stageType: PaymentStageType.CUSTOM,
+              customTitle: 'New changes Dues',
               amountDue: deltaCents,
               dueDate: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000), // 7 days due
               amountPaid: 0,
@@ -337,7 +338,8 @@ export async function PATCH(
           await prisma.paymentStage.create({
             data: {
               bookingId: id,
-              stageType: 'Customer Refund Due' as any,
+              stageType: PaymentStageType.CUSTOM,
+              customTitle: 'Customer Refund Due',
               amountDue: refundCents,
               dueDate: today,
               amountPaid: 0,
@@ -348,13 +350,13 @@ export async function PATCH(
           updateData.balanceDueAmount = 0;
         }
       } else {
-        // ── CASE 2: Customer is IN-PROGRESS (Advance, Flower, or Final stages unpaid) ──
+        // ── CASE 2: Customer is IN-PROGRESS (Installments unpaid) ──
         const unpaidStages = existingBooking.paymentStages.filter(
           (s) => s.status !== 'PAID' && s.amountDue > s.amountPaid
         );
 
         if (deltaCents > 0) {
-          // Budget INCREASED: Add delta to the last unpaid stage (e.g. FINAL or FLOWER)
+          // Budget INCREASED: Add delta to the last unpaid stage
           if (unpaidStages.length > 0) {
             const targetStage = unpaidStages[unpaidStages.length - 1];
             await prisma.paymentStage.update({
@@ -366,7 +368,8 @@ export async function PATCH(
             await prisma.paymentStage.create({
               data: {
                 bookingId: id,
-                stageType: 'New changes Dues' as any,
+                stageType: PaymentStageType.CUSTOM,
+                customTitle: 'New changes Dues',
                 amountDue: deltaCents,
                 dueDate: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000),
                 amountPaid: 0,

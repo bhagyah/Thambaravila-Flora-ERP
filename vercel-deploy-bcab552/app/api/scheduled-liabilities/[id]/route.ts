@@ -34,3 +34,54 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: 'Failed to update scheduled liability.' }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!allowed(session)) return NextResponse.json({ error: 'Owner or Accountant role required.' }, { status: 403 });
+  const { id } = await params;
+
+  try {
+    const existing = await prisma.scheduledLiability.findUnique({
+      where: { id },
+      include: { payments: true },
+    });
+    if (!existing) return NextResponse.json({ error: 'Liability not found.' }, { status: 404 });
+
+    const expenseIds = existing.payments
+      .map((p) => p.expenseId)
+      .filter((eId): eId is string => Boolean(eId));
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete associated expenses created when payments were marked paid
+      if (expenseIds.length > 0) {
+        await tx.expense.deleteMany({
+          where: { id: { in: expenseIds } },
+        });
+      }
+
+      // 2. Delete all scheduled liability payments
+      await tx.scheduledLiabilityPayment.deleteMany({
+        where: { liabilityId: id },
+      });
+
+      // 3. Delete scheduled liability template
+      await tx.scheduledLiability.delete({
+        where: { id },
+      });
+    });
+
+    await createAuditLog({
+      userId: session.user.id,
+      action: 'SCHEDULED_LIABILITY_DELETED',
+      entityType: 'scheduled_liability',
+      entityId: id,
+      details: { name: existing.name, deletedExpenseCount: expenseIds.length },
+    });
+
+    return NextResponse.json({ success: true, message: 'Scheduled liability and all associated payments & expenses deleted successfully.' });
+  } catch (error) {
+    console.error('Failed to delete scheduled liability:', error);
+    return NextResponse.json({ error: 'Failed to delete scheduled liability.' }, { status: 500 });
+  }
+}

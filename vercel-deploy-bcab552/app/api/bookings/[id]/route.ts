@@ -173,29 +173,44 @@ export async function PATCH(
     const STAGE_SEQUENCE = ['INQUIRY', 'IN_DESIGN', 'CONFIRMED', 'IN_PRODUCTION', 'DELIVERED', 'COMPLETED'];
 
     const requestedBookingStatus =
-      action === 'DECLINE_QUOTE' || action === 'SAVE_QUOTE'
+      action === 'DECLINE_QUOTE'
+        ? bookingStatus || 'CANCELLED'
+        : action === 'REOPEN_QUOTE'
+        ? bookingStatus || 'IN_DESIGN'
+        : action === 'SAVE_QUOTE'
         ? 'IN_DESIGN'
         : action === 'CONFIRM_QUOTE'
         ? 'IN_PRODUCTION'
         : bookingStatus;
 
-    if (requestedBookingStatus && requestedBookingStatus !== existingBooking.bookingStatus && STAGE_SEQUENCE.includes(requestedBookingStatus)) {
-      const curIdx = STAGE_SEQUENCE.indexOf(existingBooking.bookingStatus);
-      const newIdx = STAGE_SEQUENCE.indexOf(requestedBookingStatus);
+    if (requestedBookingStatus && requestedBookingStatus !== existingBooking.bookingStatus) {
+      if (existingBooking.bookingStatus === 'CANCELLED') {
+        if (action !== 'REOPEN_QUOTE' && !STAGE_SEQUENCE.includes(requestedBookingStatus)) {
+          return NextResponse.json(
+            {
+              error: `Invalid stage: ${requestedBookingStatus}. Please choose a valid workflow stage.`
+            },
+            { status: 400 }
+          );
+        }
+      } else if (STAGE_SEQUENCE.includes(requestedBookingStatus)) {
+        const curIdx = STAGE_SEQUENCE.indexOf(existingBooking.bookingStatus);
+        const newIdx = STAGE_SEQUENCE.indexOf(requestedBookingStatus);
 
-      const completesApprovedQuoteStage =
-        action === 'CONFIRM_QUOTE' &&
-        existingBooking.bookingStatus === 'IN_DESIGN' &&
-        requestedBookingStatus === 'IN_PRODUCTION';
+        const completesApprovedQuoteStage =
+          action === 'CONFIRM_QUOTE' &&
+          existingBooking.bookingStatus === 'IN_DESIGN' &&
+          requestedBookingStatus === 'IN_PRODUCTION';
 
-      // Quote approval completes stage 3 and enters stage 4 atomically.
-      if (user.role?.name !== 'Owner' && newIdx > curIdx + 1 && !completesApprovedQuoteStage) {
-        return NextResponse.json(
-          {
-            error: `Sequential stage rule: You cannot skip directly from Step ${curIdx + 1} (${existingBooking.bookingStatus}) to Step ${newIdx + 1} (${bookingStatus}). Stages must be completed step-by-step.`
-          },
-          { status: 400 }
-        );
+        // Quote approval completes stage 3 and enters stage 4 atomically.
+        if (user.role?.name !== 'Owner' && curIdx !== -1 && newIdx > curIdx + 1 && !completesApprovedQuoteStage) {
+          return NextResponse.json(
+            {
+              error: `Sequential stage rule: You cannot skip directly from Step ${curIdx + 1} (${existingBooking.bookingStatus}) to Step ${newIdx + 1} (${requestedBookingStatus}). Stages must be completed step-by-step.`
+            },
+            { status: 400 }
+          );
+        }
       }
     }
 
@@ -214,7 +229,12 @@ export async function PATCH(
       ...(bookingStatus && { bookingStatus }),
       ...(confirmationStatus && { confirmationStatus }),
       ...(action === 'SAVE_QUOTE' && { confirmationStatus: 'PENDING', bookingStatus: 'IN_DESIGN' }),
-      ...(action === 'DECLINE_QUOTE' && { confirmationStatus: 'NOT_CONFIRMED', bookingStatus: 'IN_DESIGN' }),
+      ...(action === 'REOPEN_QUOTE' && {
+        confirmationStatus: ['CONFIRMED', 'IN_PRODUCTION', 'DELIVERED', 'COMPLETED'].includes(bookingStatus) ? 'CONFIRMED' : 'PENDING',
+        bookingStatus: bookingStatus || 'IN_DESIGN',
+        quoteOutcomeReason: null,
+      }),
+      ...(action === 'DECLINE_QUOTE' && { confirmationStatus: 'NOT_CONFIRMED', bookingStatus: bookingStatus || 'CANCELLED' }),
       ...(action === 'CONFIRM_QUOTE' && { confirmationStatus: 'CONFIRMED', bookingStatus: 'IN_PRODUCTION' }),
       ...(notes !== undefined && { notes }),
       ...(photographerVendorId !== undefined && { photographerVendorId }),
@@ -302,7 +322,8 @@ export async function PATCH(
           await prisma.paymentStage.create({
             data: {
               bookingId: id,
-              stageType: 'New changes Dues' as any,
+              stageType: PaymentStageType.CUSTOM,
+              customTitle: 'New changes Dues',
               amountDue: deltaCents,
               dueDate: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000), // 7 days due
               amountPaid: 0,
@@ -317,7 +338,8 @@ export async function PATCH(
           await prisma.paymentStage.create({
             data: {
               bookingId: id,
-              stageType: 'Customer Refund Due' as any,
+              stageType: PaymentStageType.CUSTOM,
+              customTitle: 'Customer Refund Due',
               amountDue: refundCents,
               dueDate: today,
               amountPaid: 0,
@@ -328,13 +350,13 @@ export async function PATCH(
           updateData.balanceDueAmount = 0;
         }
       } else {
-        // ── CASE 2: Customer is IN-PROGRESS (Advance, Flower, or Final stages unpaid) ──
+        // ── CASE 2: Customer is IN-PROGRESS (Installments unpaid) ──
         const unpaidStages = existingBooking.paymentStages.filter(
           (s) => s.status !== 'PAID' && s.amountDue > s.amountPaid
         );
 
         if (deltaCents > 0) {
-          // Budget INCREASED: Add delta to the last unpaid stage (e.g. FINAL or FLOWER)
+          // Budget INCREASED: Add delta to the last unpaid stage
           if (unpaidStages.length > 0) {
             const targetStage = unpaidStages[unpaidStages.length - 1];
             await prisma.paymentStage.update({
@@ -346,7 +368,8 @@ export async function PATCH(
             await prisma.paymentStage.create({
               data: {
                 bookingId: id,
-                stageType: 'New changes Dues' as any,
+                stageType: PaymentStageType.CUSTOM,
+                customTitle: 'New changes Dues',
                 amountDue: deltaCents,
                 dueDate: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000),
                 amountPaid: 0,
@@ -540,6 +563,33 @@ export async function PATCH(
         });
       } catch (err) {
         console.error('Failed audit log for declined booking:', err);
+      }
+    }
+
+    if (action === 'REOPEN_QUOTE') {
+      if (existingBooking.leadId) {
+        await prisma.lead.update({
+          where: { id: existingBooking.leadId },
+          data: {
+            stage: 'NEGOTIATION',
+            converted: false,
+          },
+        });
+      }
+
+      try {
+        await createAuditLog({
+          userId: user.id,
+          action: 'BOOKING_QUOTE_REOPENED',
+          entityType: 'booking',
+          entityId: id,
+          details: {
+            leadId: existingBooking.leadId,
+            reason: 'Quote reopened and moved back to Design & Quotation stage',
+          },
+        });
+      } catch (err) {
+        console.error('Failed audit log for reopened booking:', err);
       }
     }
 

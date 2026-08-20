@@ -61,12 +61,13 @@ export async function POST(request: NextRequest) {
         booking.totalQuoteAmount
       );
 
-      const advanceStage = await prisma.paymentStage.findFirst({
-        where: { bookingId: booking.id, stageType: 'ADVANCE' },
+      const firstPendingStage = await prisma.paymentStage.findFirst({
+        where: { bookingId: booking.id, status: 'PENDING' },
+        orderBy: [{ stageNumber: 'asc' }, { dueDate: 'asc' }],
       });
-      if (advanceStage && advanceStage.status === 'PENDING') {
+      if (firstPendingStage) {
         await prisma.paymentStage.update({
-          where: { id: advanceStage.id },
+          where: { id: firstPendingStage.id },
           data: {
             dueDate: new Date(Date.now() + 5 * 60 * 1000),
             status: 'DUE_SOON',

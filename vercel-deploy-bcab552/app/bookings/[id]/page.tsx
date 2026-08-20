@@ -8,6 +8,8 @@ import { formatLKR } from '@/lib/utils/formatters';
 interface PaymentStage {
   id: string;
   stageType: string;
+  customTitle?: string | null;
+  stageNumber?: number | null;
   amountDue: number;
   dueDate: string;
   amountPaid: number;
@@ -263,7 +265,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                 <table className="w-full text-left text-xs text-slate-300">
                   <thead className="bg-slate-950 text-slate-400 font-semibold">
                     <tr>
-                      <th className="p-2.5">Stage</th>
+                      <th className="p-2.5">Stage / Installment</th>
                       <th className="p-2.5">Amount Due</th>
                       <th className="p-2.5">Due Date</th>
                       <th className="p-2.5">Paid Amount</th>
@@ -272,20 +274,28 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60">
-                    {visiblePaymentStages.map((s) => {
+                    {visiblePaymentStages.map((s, idx) => {
                       const isNewDues = s.stageType.includes('New changes') || s.stageType === 'BUDGET_ADJUSTMENT';
                       const isRefund = s.stageType.includes('Refund') || s.stageType === 'REFUND_DUE';
+                      const title = s.customTitle || s.stageType;
 
                       return (
                         <tr key={s.id} className={isRefund ? 'bg-amber-950/20 font-bold' : isNewDues ? 'bg-cyan-950/20 font-bold' : ''}>
                           <td className="p-2.5 font-extrabold">
-                            {isNewDues ? (
-                              <span className="text-cyan-400 flex items-center gap-1">⚡ New changes Dues</span>
-                            ) : isRefund ? (
-                              <span className="text-amber-400 flex items-center gap-1">💸 Customer Refund Due</span>
-                            ) : (
-                              <span className="text-teal-300">{s.stageType}</span>
-                            )}
+                            <div className="flex items-center gap-1.5">
+                              {s.stageNumber && (
+                                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[9px] font-mono text-emerald-400 font-black border border-slate-700">
+                                  #{s.stageNumber}
+                                </span>
+                              )}
+                              {isNewDues ? (
+                                <span className="text-cyan-400 flex items-center gap-1">⚡ New changes Dues</span>
+                              ) : isRefund ? (
+                                <span className="text-amber-400 flex items-center gap-1">💸 Customer Refund Due</span>
+                              ) : (
+                                <span className="text-teal-300">{title}</span>
+                              )}
+                            </div>
                           </td>
                           <td className="p-2.5 font-semibold text-slate-100">{formatLKR(s.amountDue)}</td>
                           <td className="p-2.5 text-slate-400">{new Date(s.dueDate).toLocaleDateString('en-GB')}</td>

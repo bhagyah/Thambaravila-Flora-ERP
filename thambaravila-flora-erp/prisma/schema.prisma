@@ -460,6 +460,8 @@ model PaymentStage {
   bookingId         String           @map("booking_id")
   booking           Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   stageType         PaymentStageType @map("stage_type")
+  customTitle       String?          @map("custom_title")
+  stageNumber       Int?             @default(1) @map("stage_number")
   amountDue         Int              @map("amount_due")
   dueDate           DateTime         @map("due_date")
   amountPaid        Int              @default(0) @map("amount_paid")
@@ -500,6 +502,8 @@ enum PaymentStageType {
   ADVANCE
   FLOWER
   FINAL
+  INSTALLMENT
+  CUSTOM
 }
 
 enum PaymentStatus {

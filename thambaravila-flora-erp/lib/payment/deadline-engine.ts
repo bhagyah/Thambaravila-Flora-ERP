@@ -100,7 +100,7 @@ export async function calculateDueDate(
 }
 
 /**
- * Create payment stages for a Booking
+ * Create initial payment stage for a Booking (Single Clean Due, ready for Accountant Split)
  */
 export async function createPaymentStagesForBooking(
   bookingId: string,
@@ -125,44 +125,35 @@ export async function createPaymentStagesForBooking(
     return;
   }
 
-  const stageDistribution = {
-    [PaymentStageType.ADVANCE]: 0.3, // 30% deposit
-    [PaymentStageType.FLOWER]: 0.4,  // 40% flower payment
-    [PaymentStageType.FINAL]: 0.3,   // 30% final balance
-  };
+  // Default: Create 1 single clear initial due for the full amount (Accountant can split as requested)
+  const dueDate = weddingDate
+    ? subDays(weddingDate, 14)
+    : addDays(bookingCreatedAt || new Date(), 7);
 
-  const stages: PaymentStageType[] = [
-    PaymentStageType.ADVANCE,
-    PaymentStageType.FLOWER,
-    PaymentStageType.FINAL,
-  ];
-
-  for (const stageType of stages) {
-    const dueDate = await calculateDueDate(stageType, bookingCreatedAt, weddingDate);
-    const amountDue = Math.round(totalQuoteAmount * stageDistribution[stageType]);
-
-    await prisma.paymentStage.create({
-      data: {
-        bookingId,
-        stageType,
-        amountDue,
-        dueDate,
-        status: 'PENDING',
-      },
-    });
-  }
+  await prisma.paymentStage.create({
+    data: {
+      bookingId,
+      stageType: PaymentStageType.INSTALLMENT,
+      customTitle: 'Total Payment Due',
+      stageNumber: 1,
+      amountDue: totalQuoteAmount,
+      dueDate: dueDate < new Date() ? addDays(new Date(), 7) : dueDate,
+      status: 'PENDING',
+    },
+  });
 
   // Compute initial payment status rollup
   await computeBookingPaymentStatus(bookingId);
 }
 
 /**
- * Computed Rollup Engine for Booking.payment_status
+ * Computed Rollup Engine for Booking.payment_status (Supports any number of custom installments 1..N)
  */
 export async function computeBookingPaymentStatus(bookingId: string): Promise<string> {
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
     select: {
+      totalQuoteAmount: true,
       bookingStatus: true,
       confirmationStatus: true,
     },
@@ -182,6 +173,7 @@ export async function computeBookingPaymentStatus(bookingId: string): Promise<st
 
   const stages = await prisma.paymentStage.findMany({
     where: { bookingId },
+    orderBy: [{ stageNumber: 'asc' }, { dueDate: 'asc' }],
   });
 
   if (stages.length === 0) {
@@ -193,45 +185,39 @@ export async function computeBookingPaymentStatus(bookingId: string): Promise<st
   }
 
   const now = new Date();
+  const totalPaid = stages.reduce((sum, s) => sum + (s.amountPaid || 0), 0);
+  const totalDue = stages.reduce((sum, s) => sum + (s.amountDue || 0), 0);
+  const targetTotal = booking.totalQuoteAmount || totalDue;
+  const balanceRemaining = Math.max(0, targetTotal - totalPaid);
 
-  // Any stage past its due_date unpaid -> OVERDUE (overrides until resolved)
+  // Check for any overdue stages
   const hasOverdue = stages.some(
-    s => s.status === 'OVERDUE' || (s.amountPaid < s.amountDue && s.dueDate < now)
+    s => s.status === 'OVERDUE' || (s.amountPaid < s.amountDue && new Date(s.dueDate) < now)
   );
 
-  if (hasOverdue) {
-    await prisma.booking.update({
-      where: { id: bookingId },
-      data: { paymentStatus: 'OVERDUE' },
-    });
-    return 'OVERDUE';
-  }
+  let newPaymentStatus: 'NOT_STARTED' | 'DEPOSIT_DUE' | 'DEPOSIT_PAID' | 'PARTIAL_PAYMENT' | 'PAID_IN_FULL' | 'OVERDUE' = 'NOT_STARTED';
 
-  const advanceStage = stages.find(s => s.stageType === PaymentStageType.ADVANCE);
-  const flowerStage = stages.find(s => s.stageType === PaymentStageType.FLOWER);
-  const finalStage = stages.find(s => s.stageType === PaymentStageType.FINAL);
-
-  const advancePaid = !!advanceStage && advanceStage.amountPaid >= advanceStage.amountDue;
-  const flowerPaid = !!flowerStage && flowerStage.amountPaid >= flowerStage.amountDue;
-  const finalPaid = !!finalStage && finalStage.amountPaid >= finalStage.amountDue;
-
-  let newPaymentStatus: 'NOT_STARTED' | 'DEPOSIT_DUE' | 'DEPOSIT_PAID' | 'PARTIAL_PAYMENT' | 'PAID_IN_FULL' = 'NOT_STARTED';
-
-  if (advancePaid && flowerPaid && finalPaid) {
+  if (totalPaid >= targetTotal && targetTotal > 0) {
     newPaymentStatus = 'PAID_IN_FULL';
-  } else if (advancePaid && (flowerPaid || finalPaid)) {
-    newPaymentStatus = 'PARTIAL_PAYMENT';
-  } else if (advancePaid) {
-    newPaymentStatus = 'DEPOSIT_PAID';
-  } else if (advanceStage && advanceStage.amountPaid === 0) {
-    newPaymentStatus = 'DEPOSIT_DUE';
+  } else if (hasOverdue) {
+    newPaymentStatus = 'OVERDUE';
+  } else if (totalPaid > 0) {
+    const firstStage = stages[0];
+    if (firstStage && firstStage.amountPaid >= firstStage.amountDue && stages.length > 1 && totalPaid === firstStage.amountPaid) {
+      newPaymentStatus = 'DEPOSIT_PAID';
+    } else {
+      newPaymentStatus = 'PARTIAL_PAYMENT';
+    }
   } else {
-    newPaymentStatus = 'NOT_STARTED';
+    newPaymentStatus = 'DEPOSIT_DUE';
   }
 
   await prisma.booking.update({
     where: { id: bookingId },
-    data: { paymentStatus: newPaymentStatus },
+    data: {
+      paymentStatus: newPaymentStatus,
+      balanceDueAmount: balanceRemaining,
+    },
   });
 
   return newPaymentStatus;

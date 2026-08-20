@@ -32,16 +32,25 @@ interface BookingItem {
   receptionVenue?: { name: string; cityArea: string; loadInNotes?: string; floralRestrictions?: string } | null;
 }
 
-// Stage Definition & Labels
-const STAGES = [
+// Sequential 6 Pipeline Job Stages (Used in Current Job Stage dropdown)
+const WORKFLOW_STAGES = [
   { key: 'INQUIRY', label: '1. Initial Meeting & Consultation', icon: '💬', color: 'border-blue-500/40 text-blue-400 bg-blue-950/30' },
   { key: 'IN_DESIGN', label: '2. Design & Quotation Stage', icon: '🎨', color: 'border-pink-500/40 text-pink-400 bg-pink-950/30' },
   { key: 'CONFIRMED', label: '3. Quote Approved & Confirmed', icon: '💍', color: 'border-amber-500/40 text-amber-400 bg-amber-950/30' },
   { key: 'IN_PRODUCTION', label: '4. Flower Production & Prep', icon: '🌸', color: 'border-emerald-500/40 text-emerald-400 bg-emerald-950/30' },
   { key: 'DELIVERED', label: '5. On-Site Setup & Delivery', icon: '🚚', color: 'border-cyan-500/40 text-cyan-400 bg-cyan-950/30' },
   { key: 'COMPLETED', label: '6. Event Completed & Teardown', icon: '✅', color: 'border-slate-700 text-slate-300 bg-slate-900' },
-  { key: 'CANCELLED', label: 'Quote Declined / Not Confirmed', icon: '✕', color: 'border-rose-500/40 text-rose-300 bg-rose-950/30' },
 ];
+
+const DECLINED_STAGE = {
+  key: 'CANCELLED',
+  label: 'Quote Declined / Not Confirmed',
+  icon: '✕',
+  color: 'border-rose-500/40 text-rose-300 bg-rose-950/30',
+};
+
+// All stages for top filter summary cards and filter dropdown
+const ALL_FILTER_STAGES = [...WORKFLOW_STAGES, DECLINED_STAGE];
 
 export default function DesignerDashboardPage() {
   const { data: session } = useSession();
@@ -68,6 +77,8 @@ export default function DesignerDashboardPage() {
 
   // Pending Stage Selection State (prevents immediate accidental mutations)
   const [pendingStages, setPendingStages] = useState<Record<string, string>>({});
+  // Reopen Stage Selection State for Quote Declined events
+  const [reopenStages, setReopenStages] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (session) {
@@ -198,13 +209,15 @@ export default function DesignerDashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'DECLINE_QUOTE',
+          bookingStatus: 'CANCELLED',
+          confirmationStatus: 'NOT_CONFIRMED',
           quoteOutcomeReason: reason.trim() || 'Client declined the quotation',
         }),
       });
 
       if (res.ok) {
         fetchBookings();
-        setFeedback({ text: `✓ Booking ${booking.id} sent back for redesign.`, type: 'success' });
+        setFeedback({ text: `✓ Booking ${booking.id} marked as Quote Declined / Not Confirmed.`, type: 'success' });
         setTimeout(() => setFeedback(null), 3000);
       } else {
         const data = await res.json();
@@ -212,6 +225,36 @@ export default function DesignerDashboardPage() {
       }
     } catch {
       setFeedback({ text: 'Failed to decline quote', type: 'error' });
+    }
+  };
+
+  const handleReopenDeclinedQuote = async (booking: BookingItem, targetStageKey: string = 'IN_DESIGN') => {
+    const targetStageObj = WORKFLOW_STAGES.find(s => s.key === targetStageKey) || WORKFLOW_STAGES[1];
+    if (!window.confirm(`Reopen quotation for ${booking.customer.name} (${booking.id}) and move to "${targetStageObj.label}"?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/bookings/${booking.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'REOPEN_QUOTE',
+          bookingStatus: targetStageKey,
+          confirmationStatus: ['CONFIRMED', 'IN_PRODUCTION', 'DELIVERED', 'COMPLETED'].includes(targetStageKey) ? 'CONFIRMED' : 'PENDING',
+        }),
+      });
+
+      if (res.ok) {
+        fetchBookings();
+        setFeedback({ text: `✓ Booking ${booking.id} reopened and moved to "${targetStageObj.label}"!`, type: 'success' });
+        setTimeout(() => setFeedback(null), 3000);
+      } else {
+        const data = await res.json();
+        setFeedback({ text: data.error || 'Failed to reopen quote', type: 'error' });
+      }
+    } catch {
+      setFeedback({ text: 'Failed to reopen quote', type: 'error' });
     }
   };
 
@@ -287,7 +330,7 @@ export default function DesignerDashboardPage() {
   });
 
   // Calculate Stage Funnel Counters (How many jobs passed each stage)
-  const stageCounts = STAGES.reduce((acc, stage) => {
+  const stageCounts = ALL_FILTER_STAGES.reduce((acc, stage) => {
     acc[stage.key] = bookings.filter(b => b.bookingStatus === stage.key).length;
     return acc;
   }, {} as Record<string, number>);
@@ -352,8 +395,8 @@ export default function DesignerDashboardPage() {
             <span className="text-[10px] text-slate-500 font-mono">Real-Time Stage Sync</span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {STAGES.map((s) => {
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+            {ALL_FILTER_STAGES.map((s) => {
               const count = stageCounts[s.key] || 0;
               const isSelected = selectedStageFilter === s.key;
               return (
@@ -400,7 +443,7 @@ export default function DesignerDashboardPage() {
               className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-rose-500"
             >
               <option value="ALL">All Stages ({bookings.length})</option>
-              {STAGES.map(s => (
+              {ALL_FILTER_STAGES.map(s => (
                 <option key={s.key} value={s.key}>
                   {s.label} ({stageCounts[s.key] || 0})
                 </option>
@@ -419,10 +462,11 @@ export default function DesignerDashboardPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredBookings.map((booking) => {
-              const currentStage = STAGES.find(s => s.key === booking.bookingStatus) || STAGES[1];
+              const currentStage = ALL_FILTER_STAGES.find(s => s.key === booking.bookingStatus) || WORKFLOW_STAGES[1];
               const isDraftStage = booking.bookingStatus === 'IN_DESIGN';
               const isApprovedQuote = booking.confirmationStatus === 'CONFIRMED';
               const needsRedesign = booking.confirmationStatus === 'NOT_CONFIRMED' || booking.quoteOutcomeReason;
+              const isDeclined = booking.bookingStatus === 'CANCELLED';
 
               return (
                 <div
@@ -477,97 +521,143 @@ export default function DesignerDashboardPage() {
                       )}
                     </div>
 
-                    {/* Stage Switcher with Sequential Locking & Explicit Approval Button */}
-                    <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
-                      <div className="flex justify-between items-center text-[10px] uppercase font-bold text-slate-400">
-                        <span>Current Job Stage:</span>
-                        <span className={`px-2 py-0.5 rounded text-[9px] border font-extrabold ${currentStage.color}`}>
-                          {currentStage.icon} {currentStage.label.split('.')[1]?.trim()}
-                        </span>
-                      </div>
+                    {/* Stage Switcher with Sequential Locking & Explicit Approval Button OR Dedicated Reopen Button with Stage Selector */}
+                    {isDeclined ? (
+                      <div className="p-3 bg-rose-950/40 rounded-xl border border-rose-800/60 space-y-2.5">
+                        <div className="flex justify-between items-center text-[10px] uppercase font-bold text-rose-400">
+                          <span>Current Job Stage:</span>
+                          <span className="px-2 py-0.5 rounded text-[9px] border font-extrabold border-rose-500/40 text-rose-300 bg-rose-950/80">
+                            ✕ Quote Declined / Not Confirmed
+                          </span>
+                        </div>
 
-                      {(() => {
-                        const currentIdx = STAGES.findIndex(s => s.key === booking.bookingStatus);
-                        const activeValue = pendingStages[booking.id] || booking.bookingStatus;
-                        const isPendingChange = pendingStages[booking.id] && pendingStages[booking.id] !== booking.bookingStatus;
-
-                        return (
-                          <div className="space-y-2">
-                            <select
-                              value={activeValue}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setPendingStages(prev => ({ ...prev, [booking.id]: val }));
-                              }}
-                              className={`w-full bg-slate-900 border rounded-lg p-2 text-xs font-bold focus:outline-none transition ${
-                                isPendingChange ? 'border-amber-500 text-amber-300 ring-1 ring-amber-500/50' : 'border-slate-800 text-slate-100'
-                              }`}
-                            >
-                              {STAGES.map((s, idx) => {
-                                const isCurrent = s.key === booking.bookingStatus;
-                                const isNext = idx === currentIdx + 1;
-                                const isPrev = idx === currentIdx - 1;
-                                const isAllowed = isCurrent || isNext || isPrev || roleName === 'Owner';
-
-                                return (
-                                  <option
-                                    key={s.key}
-                                    value={s.key}
-                                    disabled={!isAllowed}
-                                    className={!isAllowed ? 'text-slate-600 bg-slate-950' : 'text-slate-100 font-bold'}
-                                  >
-                                    {s.label} {!isAllowed ? '🔒 (Locked: Must progress step-by-step)' : isNext ? ' ➔ [Next Step]' : isCurrent ? ' (Active)' : ''}
-                                  </option>
-                                );
-                              })}
-                            </select>
-
-                            {/* Explicit Stage Approval Button */}
-                            {isPendingChange ? (
-                              <div className="flex gap-2 pt-1 animate-in fade-in">
-                                <button
-                                  onClick={() => handleStageChange(booking.id, pendingStages[booking.id])}
-                                  className="flex-1 py-1.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-lg shadow-lg flex items-center justify-center space-x-1.5 transition"
-                                >
-                                  <span>✓ Approve &amp; Confirm Stage</span>
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setPendingStages(prev => {
-                                      const copy = { ...prev };
-                                      delete copy[booking.id];
-                                      return copy;
-                                    });
-                                  }}
-                                  className="py-1.5 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-lg border border-slate-700 transition"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            ) : (
-                              currentIdx >= 0 && currentIdx < 5 && (
-                                <button
-                                  onClick={() => {
-                                    const nextStageKey = STAGES[currentIdx + 1].key;
-                                    setPendingStages(prev => ({ ...prev, [booking.id]: nextStageKey }));
-                                  }}
-                                  className="w-full py-1 text-[11px] font-bold text-rose-300 hover:text-rose-200 bg-rose-950/30 hover:bg-rose-900/40 border border-rose-900/40 rounded-lg transition flex items-center justify-center space-x-1"
-                                >
-                                  <span>Select Step {currentIdx + 2} ({STAGES[currentIdx + 1].label.split('.')[1]?.trim()}) ➔</span>
-                                </button>
-                              )
-                            )}
+                        {booking.quoteOutcomeReason && (
+                          <div className="text-[11px] text-rose-200/90 bg-rose-950/70 p-2 rounded-lg border border-rose-900/60">
+                            <span className="font-semibold text-rose-400 block text-[9px] uppercase tracking-wider mb-0.5">Decline Reason:</span>
+                            "{booking.quoteOutcomeReason}"
                           </div>
-                        );
-                      })()}
-                    </div>
+                        )}
 
-                    <button
-                      onClick={() => handleDeclineQuote(booking)}
-                      className="w-full py-1.5 text-[11px] font-bold rounded-xl bg-rose-950/50 hover:bg-rose-900/60 text-rose-300 border border-rose-800/40 transition"
-                    >
-                      Send Back for Redesign
-                    </button>
+                        <div className="space-y-1.5 pt-1">
+                          <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider block">
+                            Select Stage to Reopen/Move:
+                          </label>
+                          <select
+                            value={reopenStages[booking.id] || 'IN_DESIGN'}
+                            onChange={(e) => setReopenStages(prev => ({ ...prev, [booking.id]: e.target.value }))}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-bold text-slate-100 focus:outline-none focus:border-amber-500 transition"
+                          >
+                            {WORKFLOW_STAGES.map((s) => (
+                              <option key={s.key} value={s.key} className="text-slate-100 font-bold bg-slate-900">
+                                {s.label}
+                              </option>
+                            ))}
+                          </select>
+
+                          {/* Dedicated Reopen Button ONLY for Quote Declined / Not Confirmed events */}
+                          <button
+                            onClick={() => handleReopenDeclinedQuote(booking, reopenStages[booking.id] || 'IN_DESIGN')}
+                            className="w-full py-2 px-3 bg-gradient-to-r from-amber-600 via-rose-600 to-amber-600 hover:from-amber-500 hover:to-rose-500 text-white font-extrabold text-xs rounded-xl shadow-lg flex items-center justify-center space-x-1.5 transition active:scale-[0.98]"
+                          >
+                            <span>🔄</span>
+                            <span>Reopen &amp; Move to Selected Stage</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                          <div className="flex justify-between items-center text-[10px] uppercase font-bold text-slate-400">
+                            <span>Current Job Stage:</span>
+                            <span className={`px-2 py-0.5 rounded text-[9px] border font-extrabold ${currentStage.color}`}>
+                              {currentStage.icon} {currentStage.label.split('.')[1]?.trim()}
+                            </span>
+                          </div>
+
+                          {(() => {
+                            const currentIdx = WORKFLOW_STAGES.findIndex(s => s.key === booking.bookingStatus);
+                            const activeValue = pendingStages[booking.id] || booking.bookingStatus;
+                            const isPendingChange = pendingStages[booking.id] && pendingStages[booking.id] !== booking.bookingStatus;
+
+                            return (
+                              <div className="space-y-2">
+                                <select
+                                  value={activeValue}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setPendingStages(prev => ({ ...prev, [booking.id]: val }));
+                                  }}
+                                  className={`w-full bg-slate-900 border rounded-lg p-2 text-xs font-bold focus:outline-none transition ${
+                                    isPendingChange ? 'border-amber-500 text-amber-300 ring-1 ring-amber-500/50' : 'border-slate-800 text-slate-100'
+                                  }`}
+                                >
+                                  {WORKFLOW_STAGES.map((s, idx) => {
+                                    const isCurrent = s.key === booking.bookingStatus;
+                                    const isNext = idx === currentIdx + 1;
+                                    const isPrev = idx === currentIdx - 1;
+                                    const isAllowed = isCurrent || isNext || isPrev || roleName === 'Owner';
+
+                                    return (
+                                      <option
+                                        key={s.key}
+                                        value={s.key}
+                                        disabled={!isAllowed}
+                                        className={!isAllowed ? 'text-slate-600 bg-slate-950' : 'text-slate-100 font-bold'}
+                                      >
+                                        {s.label} {!isAllowed ? '🔒 (Locked: Must progress step-by-step)' : isNext ? ' ➔ [Next Step]' : isCurrent ? ' (Active)' : ''}
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+
+                                {/* Explicit Stage Approval Button */}
+                                {isPendingChange ? (
+                                  <div className="flex gap-2 pt-1 animate-in fade-in">
+                                    <button
+                                      onClick={() => handleStageChange(booking.id, pendingStages[booking.id])}
+                                      className="flex-1 py-1.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-lg shadow-lg flex items-center justify-center space-x-1.5 transition"
+                                    >
+                                      <span>✓ Approve &amp; Confirm Stage</span>
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setPendingStages(prev => {
+                                          const copy = { ...prev };
+                                          delete copy[booking.id];
+                                          return copy;
+                                        });
+                                      }}
+                                      className="py-1.5 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-lg border border-slate-700 transition"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                ) : (
+                                  currentIdx >= 0 && currentIdx < WORKFLOW_STAGES.length - 1 && (
+                                    <button
+                                      onClick={() => {
+                                        const nextStageKey = WORKFLOW_STAGES[currentIdx + 1].key;
+                                        setPendingStages(prev => ({ ...prev, [booking.id]: nextStageKey }));
+                                      }}
+                                      className="w-full py-1 text-[11px] font-bold text-rose-300 hover:text-rose-200 bg-rose-950/30 hover:bg-rose-900/40 border border-rose-900/40 rounded-lg transition flex items-center justify-center space-x-1"
+                                    >
+                                      <span>Select Step {currentIdx + 2} ({WORKFLOW_STAGES[currentIdx + 1].label.split('.')[1]?.trim()}) ➔</span>
+                                    </button>
+                                  )
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        <button
+                          onClick={() => handleDeclineQuote(booking)}
+                          className="w-full py-1.5 text-[11px] font-bold rounded-xl bg-rose-950/50 hover:bg-rose-900/60 text-rose-300 border border-rose-800/40 transition"
+                        >
+                          Send Back for Redesign / Decline Quote
+                        </button>
+                      </>
+                    )}
 
                     {/* Budget & Quotation Amount Bar */}
                     <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80 flex justify-between items-center text-xs">
