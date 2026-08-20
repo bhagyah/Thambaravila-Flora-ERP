@@ -60,7 +60,7 @@ function MenuBadge({ abbr, accent, active = false }: { abbr: string; accent: Acc
   return (
     <span
       className={[
-        'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border text-[10px] font-black tracking-[0.18em] shadow-sm',
+        'flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border text-[9px] font-black tracking-[0.14em] shadow-sm',
         active ? styles.active : styles.chip,
       ].join(' ')}
     >
@@ -76,7 +76,6 @@ function SidebarNavItem({
   accent,
   active,
   onClick,
-  compact = false,
 }: {
   href: string;
   label: string;
@@ -84,7 +83,6 @@ function SidebarNavItem({
   accent: Accent;
   active: boolean;
   onClick?: () => void;
-  compact?: boolean;
 }) {
   const styles = accentStyles[accent];
 
@@ -93,16 +91,15 @@ function SidebarNavItem({
       href={href}
       onClick={onClick}
       className={[
-        'group relative flex min-h-11 items-center gap-3 rounded-2xl border px-3 py-2.5 text-sm font-semibold transition-all duration-200',
+        'group relative flex h-8 items-center gap-2.5 rounded-xl border px-2.5 py-1 text-xs font-semibold transition-all duration-200',
         active
-          ? `${styles.active} shadow-[0_18px_40px_rgba(0,0,0,0.18)] ring-1 ring-white/10`
+          ? `${styles.active} shadow-[0_10px_24px_rgba(0,0,0,0.12)] ring-1 ring-white/10`
           : 'border-transparent text-slate-300 hover:border-white/10 hover:bg-white/[0.07] hover:text-white',
-        compact ? 'min-h-11' : '',
       ].join(' ')}
     >
       <span
         className={[
-          'absolute left-0 top-2 bottom-2 w-1 rounded-r-full transition-opacity',
+          'absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r-full transition-opacity',
           active ? styles.rail : 'opacity-0 group-hover:opacity-80',
         ].join(' ')}
       />
@@ -128,13 +125,13 @@ function SidebarSubItem({
       href={href}
       onClick={onClick}
       className={[
-        'flex min-h-11 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium transition-all duration-200',
+        'flex h-7 items-center gap-1.5 rounded-lg border px-2.5 py-0.5 text-[11px] font-medium transition-all duration-200',
         active
           ? 'border-white/[0.15] bg-white/10 text-white'
           : 'border-transparent text-slate-400 hover:border-white/10 hover:bg-white/[0.07] hover:text-slate-100',
       ].join(' ')}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
+      <span className="h-1 w-1 rounded-full bg-current opacity-70" />
       <span className="truncate">{label}</span>
     </Link>
   );
@@ -142,7 +139,7 @@ function SidebarSubItem({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="px-2 pt-2 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400/90">
+    <div className="px-2 pt-1.5 pb-0.5 text-[9px] font-black uppercase tracking-[0.22em] text-slate-400/80">
       {children}
     </div>
   );
@@ -197,11 +194,7 @@ export default function Sidebar() {
   const asideShell = isLight
     ? 'border-[#DDD8D3] bg-[#F2F0EF] text-[#1E2421] shadow-[0_12px_36px_rgba(40,35,30,0.08)]'
     : 'border-white/10 bg-[#171c1a] text-white shadow-[0_12px_36px_rgba(0,0,0,0.22)]';
-  const sectionShell = isLight
-    ? 'border-[#DDD8D3] bg-[#E5E2DF]'
-    : 'border-white/10 bg-white/5';
   const textStrong = isLight ? 'text-[#1E2421]' : 'text-slate-100';
-  const textMuted = isLight ? 'text-[#5A625D]' : 'text-slate-400';
 
   const dashboardHref = roleName === 'Floral Designer' ? '/designer' : '/dashboard';
   const dashboardLabel = roleName === 'Floral Designer' ? 'Designer Studio' : 'Dashboard';
@@ -235,34 +228,34 @@ export default function Sidebar() {
 
   return (
     <>
-      <div className={`fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b px-3 py-3 sm:px-4 lg:hidden ${mobileShell}`}>
-        <Link href="/dashboard" className="flex min-w-0 flex-1 items-center gap-2.5">
-          <div className={`relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl border shadow-sm ${isLight ? 'border-[#DDD8D3] bg-[#FAF9F8]' : 'border-white/10 bg-white/[0.08]'}`}>
-            <Image src="/logo.png" alt="Thambaravila Flora" width={28} height={28} className="scale-[2.1] object-contain object-center" />
+      <div className={`fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b px-3 py-2.5 sm:px-4 lg:hidden ${mobileShell}`}>
+        <Link href="/dashboard" className="flex min-w-0 flex-1 items-center gap-2">
+          <div className={`relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg border shadow-sm ${isLight ? 'border-[#DDD8D3] bg-[#FAF9F8]' : 'border-white/10 bg-white/[0.08]'}`}>
+            <Image src="/logo.png" alt="Thambaravila Flora" width={24} height={24} className="scale-[2.0] object-contain object-center" />
           </div>
           <div className="min-w-0">
-            <div className={`truncate text-xs font-black tracking-[0.18em] ${textStrong}`}>THAMBARAVILA</div>
-            <div className="truncate text-[10px] font-semibold tracking-[0.22em] text-[#4E9D82]">FLORA ERP</div>
+            <div className={`truncate text-xs font-black tracking-[0.16em] ${textStrong}`}>THAMBARAVILA</div>
+            <div className="truncate text-[9px] font-semibold tracking-[0.2em] text-[#4E9D82]">FLORA ERP</div>
           </div>
         </Link>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5">
           <NotificationCenter />
           <button
             onClick={() => setMobileOpen((value) => !value)}
-            className={`grid h-11 w-11 place-items-center rounded-xl border ${isLight ? 'border-[#DDD8D3] bg-[#FAF9F8] text-[#1E2421]' : 'border-white/10 bg-white/[0.08] text-slate-100'}`}
+            className={`grid h-9 w-9 place-items-center rounded-lg border ${isLight ? 'border-[#DDD8D3] bg-[#FAF9F8] text-[#1E2421]' : 'border-white/10 bg-white/[0.08] text-slate-100'}`}
             aria-label="Toggle navigation"
           >
             {mobileOpen ? (
-              <span className="relative block h-4 w-4">
-                <span className="absolute left-0 top-1/2 h-0.5 w-4 -translate-y-1/2 rotate-45 rounded-full bg-current" />
-                <span className="absolute left-0 top-1/2 h-0.5 w-4 -translate-y-1/2 -rotate-45 rounded-full bg-current" />
+              <span className="relative block h-3.5 w-3.5">
+                <span className="absolute left-0 top-1/2 h-0.5 w-3.5 -translate-y-1/2 rotate-45 rounded-full bg-current" />
+                <span className="absolute left-0 top-1/2 h-0.5 w-3.5 -translate-y-1/2 -rotate-45 rounded-full bg-current" />
               </span>
             ) : (
-              <span className="flex flex-col gap-1">
-                <span className="block h-0.5 w-4 rounded-full bg-current" />
-                <span className="block h-0.5 w-4 rounded-full bg-current" />
-                <span className="block h-0.5 w-4 rounded-full bg-current" />
+              <span className="flex flex-col gap-0.5">
+                <span className="block h-0.5 w-3.5 rounded-full bg-current" />
+                <span className="block h-0.5 w-3.5 rounded-full bg-current" />
+                <span className="block h-0.5 w-3.5 rounded-full bg-current" />
               </span>
             )}
           </button>
@@ -279,42 +272,22 @@ export default function Sidebar() {
         }`}
       >
         <div className="flex h-full flex-col overflow-y-auto">
-          <div className={`border-b p-4 ${isLight ? 'border-[#DDD8D3] bg-[#ECE9E6]' : 'border-white/10 bg-white/5'}`}>
-            <div className="flex items-center gap-3">
-              <div className={`relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border shadow-sm ${isLight ? 'border-[#DDD8D3] bg-[#FAF9F8]' : 'border-white/10 bg-white/[0.08]'}`}>
-                <Image src="/logo.png" alt="Thambaravila Flora" width={40} height={40} className="scale-[2.1] object-contain object-center" />
+          {/* Compact Brand Header */}
+          <div className={`border-b px-3.5 py-3 ${isLight ? 'border-[#DDD8D3] bg-[#ECE9E6]' : 'border-white/10 bg-white/5'}`}>
+            <Link href="/dashboard" className="flex items-center gap-2.5">
+              <div className={`relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl border shadow-sm ${isLight ? 'border-[#DDD8D3] bg-[#FAF9F8]' : 'border-white/10 bg-white/[0.08]'}`}>
+                <Image src="/logo.png" alt="Thambaravila Flora" width={32} height={32} className="scale-[2.0] object-contain object-center" />
               </div>
               <div className="min-w-0">
-                <div className={`truncate text-sm font-black tracking-[0.2em] ${textStrong}`}>THAMBARAVILA</div>
-                <div className="truncate text-xs font-semibold tracking-[0.22em] text-[#4E9D82]">FLORA ERP PORTAL</div>
+                <div className={`truncate text-xs font-black tracking-[0.18em] ${textStrong}`}>THAMBARAVILA</div>
+                <div className="truncate text-[9px] font-semibold tracking-[0.2em] text-[#4E9D82]">FLORA ERP PORTAL</div>
               </div>
-            </div>
-
-            <div className={`mt-4 rounded-2xl border px-4 py-3 ${sectionShell}`}>
-              <div className={`text-[10px] font-bold uppercase tracking-[0.24em] ${textMuted}`}>Active Role</div>
-              <div className={`mt-1 text-sm font-semibold ${textStrong}`}>{roleName || 'Team Member'}</div>
-              <div className={`mt-1 text-xs ${textMuted}`}>Operational access and live workflow control</div>
-              <button
-                type="button"
-                onClick={() => {
-                  setProfileModalOpen(true);
-                  setMobileOpen(false);
-                }}
-                className={`mt-3 min-h-11 w-full rounded-xl border px-3 py-2 text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                  isLight
-                    ? 'border-[#DDD8D3] bg-[#FAF9F8] text-[#2C3B34] hover:bg-[#E5E2DF] hover:text-[#111A15]'
-                    : 'border-white/10 bg-white/[0.08] text-slate-200 hover:bg-white/[0.12]'
-                }`}
-              >
-                <span>🖼️</span>
-                <span>Profile &amp; Wallpaper</span>
-              </button>
-            </div>
+            </Link>
           </div>
 
-          <nav className="flex-1 space-y-3 p-3.5 text-sm">
+          <nav className="flex-1 space-y-1.5 p-2.5 text-xs">
             <SectionLabel>Main Modules</SectionLabel>
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               {coreLinks.map((item) => (
                 <SidebarNavItem
                   key={item.href}
@@ -329,29 +302,29 @@ export default function Sidebar() {
             </div>
 
             {(hasPerm('view_financial_dashboard') || isAccountant) && (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <button
                   onClick={() => setAccountsOpen((value) => !value)}
                   className={[
-                    'group relative flex w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left text-sm font-semibold transition-all duration-200',
+                    'group relative flex h-8 w-full items-center gap-2.5 rounded-xl border px-2.5 py-1 text-left text-xs font-semibold transition-all duration-200',
                     isActive('/accountant')
-                      ? 'border-[#6BAF91]/30 bg-[#6BAF91]/14 text-white shadow-[0_18px_40px_rgba(0,0,0,0.18)]'
+                      ? 'border-[#6BAF91]/30 bg-[#6BAF91]/14 text-white shadow-[0_10px_24px_rgba(0,0,0,0.14)]'
                       : 'border-transparent text-slate-300 hover:border-white/10 hover:bg-white/[0.07] hover:text-white',
                   ].join(' ')}
                 >
                   <span
                     className={[
-                      'absolute left-0 top-2 bottom-2 w-1 rounded-r-full',
+                      'absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r-full',
                       isActive('/accountant') ? 'bg-[#6BAF91]' : 'bg-[#6BAF91]/50 opacity-0 group-hover:opacity-80',
                     ].join(' ')}
                   />
                   <MenuBadge abbr="AC" accent="sage" active={isActive('/accountant')} />
                   <span className="min-w-0 flex-1 truncate">Accounts &amp; Finance</span>
-                  <span className="text-[10px] font-black tracking-[0.24em] text-slate-500">{accountsOpen ? 'UP' : 'DN'}</span>
+                  <span className="text-[9px] font-black tracking-[0.2em] text-slate-500">{accountsOpen ? 'UP' : 'DN'}</span>
                 </button>
 
                 {(accountsOpen || isActive('/accountant')) && (
-                  <div className="space-y-2 border-l border-white/10 pl-4">
+                  <div className="space-y-1 border-l border-white/10 pl-3 my-1">
                     <SidebarSubItem href="/accountant/dues" label="Payment Dues" active={isActive('/accountant/dues')} onClick={() => setMobileOpen(false)} />
                     {isAccountant && <SidebarSubItem href="/accountant/liabilities" label="Scheduled Liabilities" active={isActive('/accountant/liabilities')} onClick={() => setMobileOpen(false)} />}
                     {isAccountant && <SidebarSubItem href="/accountant/cashflow-history" label="Payments & Receivables" active={isActive('/accountant/cashflow-history')} onClick={() => setMobileOpen(false)} />}
@@ -363,29 +336,29 @@ export default function Sidebar() {
             )}
 
             {isSales && (
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <button
                   onClick={() => setSalesOpen((value) => !value)}
                   className={[
-                    'group relative flex w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left text-sm font-semibold transition-all duration-200',
+                    'group relative flex h-8 w-full items-center gap-2.5 rounded-xl border px-2.5 py-1 text-left text-xs font-semibold transition-all duration-200',
                     isActive('/sales')
-                      ? 'border-[#4E9D82]/30 bg-[#4E9D82]/14 text-white shadow-[0_18px_40px_rgba(0,0,0,0.18)]'
+                      ? 'border-[#4E9D82]/30 bg-[#4E9D82]/14 text-white shadow-[0_10px_24px_rgba(0,0,0,0.14)]'
                       : 'border-transparent text-slate-300 hover:border-white/10 hover:bg-white/[0.07] hover:text-white',
                   ].join(' ')}
                 >
                   <span
                     className={[
-                      'absolute left-0 top-2 bottom-2 w-1 rounded-r-full',
+                      'absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r-full',
                       isActive('/sales') ? 'bg-[#4E9D82]' : 'bg-[#4E9D82]/50 opacity-0 group-hover:opacity-80',
                     ].join(' ')}
                   />
                   <MenuBadge abbr="SL" accent="green" active={isActive('/sales')} />
                   <span className="min-w-0 flex-1 truncate">Sales Management</span>
-                  <span className="text-[10px] font-black tracking-[0.24em] text-slate-500">{salesOpen ? 'UP' : 'DN'}</span>
+                  <span className="text-[9px] font-black tracking-[0.2em] text-slate-500">{salesOpen ? 'UP' : 'DN'}</span>
                 </button>
 
                 {(salesOpen || isActive('/sales')) && (
-                  <div className="space-y-2 border-l border-white/10 pl-4">
+                  <div className="space-y-1 border-l border-white/10 pl-3 my-1">
                     <SidebarSubItem href="/sales/analytics" label="Pattern Analytics" active={isActive('/sales/analytics')} onClick={() => setMobileOpen(false)} />
                   </div>
                 )}
@@ -437,29 +410,29 @@ export default function Sidebar() {
             )}
 
             {(isIT || isOwner) && (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <button
                   onClick={() => setAdminOpen((value) => !value)}
                   className={[
-                    'group relative flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left text-sm font-semibold transition-all duration-200',
+                    'group relative flex h-8 w-full items-center gap-2.5 rounded-xl border px-2.5 py-1 text-left text-xs font-semibold transition-all duration-200',
                     isActive('/admin')
-                      ? 'border-violet-400/30 bg-violet-400/14 text-white shadow-[0_18px_40px_rgba(0,0,0,0.18)]'
+                      ? 'border-violet-400/30 bg-violet-400/14 text-white shadow-[0_10px_24px_rgba(0,0,0,0.14)]'
                       : 'border-transparent text-slate-300 hover:border-white/10 hover:bg-white/[0.07] hover:text-white',
                   ].join(' ')}
                 >
                   <span
                     className={[
-                      'absolute left-0 top-2 bottom-2 w-1 rounded-r-full',
+                      'absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r-full',
                       isActive('/admin') ? 'bg-violet-400' : 'bg-violet-400/50 opacity-0 group-hover:opacity-80',
                     ].join(' ')}
                   />
                   <MenuBadge abbr="AD" accent="violet" active={isActive('/admin')} />
                   <span className="min-w-0 flex-1 truncate">Admin Control</span>
-                  <span className="text-[10px] font-black tracking-[0.24em] text-slate-500">{adminOpen ? 'UP' : 'DN'}</span>
+                  <span className="text-[9px] font-black tracking-[0.2em] text-slate-500">{adminOpen ? 'UP' : 'DN'}</span>
                 </button>
 
                 {(adminOpen || isActive('/admin')) && (
-                  <div className="space-y-2 border-l border-white/10 pl-4">
+                  <div className="space-y-1 border-l border-white/10 pl-3 my-1">
                     <SidebarSubItem href="/admin/users" label="User Management" active={isActive('/admin/users')} onClick={() => setMobileOpen(false)} />
                     <SidebarSubItem href="/admin/config" label="System Config" active={isActive('/admin/config')} onClick={() => setMobileOpen(false)} />
                     <SidebarSubItem href="/admin/audit-logs" label="Audit Logs" active={isActive('/admin/audit-logs')} onClick={() => setMobileOpen(false)} />
@@ -472,7 +445,7 @@ export default function Sidebar() {
             )}
 
             <SectionLabel>Tools</SectionLabel>
-            <div className="space-y-2">
+            <div className="space-y-1">
               {toolLinks.map((item) => (
                 <SidebarNavItem
                   key={item.href}
@@ -482,12 +455,10 @@ export default function Sidebar() {
                   accent={item.accent}
                   active={item.active}
                   onClick={() => setMobileOpen(false)}
-                  compact
                 />
               ))}
             </div>
           </nav>
-
         </div>
       </aside>
 
