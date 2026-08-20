@@ -30,7 +30,17 @@ export async function POST(request: NextRequest) {
         weddingDate: true,
         totalQuoteAmount: true,
         createdAt: true,
-        paymentStages: { select: { id: true } },
+        paymentStages: {
+          select: {
+            id: true,
+            stageType: true,
+            customTitle: true,
+            amountDue: true,
+            amountPaid: true,
+            status: true,
+            receipt: { select: { id: true } },
+          },
+        },
       },
     });
 
@@ -38,7 +48,16 @@ export async function POST(request: NextRequest) {
     for (const booking of bookings) {
       const needsConfirmation = booking.confirmationStatus !== 'CONFIRMED';
       const needsPaymentStages = booking.paymentStages.length === 0;
-      if (!needsConfirmation && !needsPaymentStages) continue;
+
+      // Check if this booking has legacy unpaid 3 stages (ADVANCE, FLOWER, FINAL) with 0 payments
+      const isLegacyUnpaidSplit =
+        booking.paymentStages.length >= 2 &&
+        booking.paymentStages.every(
+          (s) => s.amountPaid === 0 && !s.receipt && (!s.customTitle || s.customTitle === s.stageType)
+        ) &&
+        booking.paymentStages.some((s) => s.stageType === 'ADVANCE' || s.stageType === 'FLOWER' || s.stageType === 'FINAL');
+
+      if (!needsConfirmation && !needsPaymentStages && !isLegacyUnpaidSplit) continue;
 
       if (needsConfirmation) {
         await prisma.booking.update({
@@ -51,6 +70,15 @@ export async function POST(request: NextRequest) {
         await prisma.lead.update({
           where: { id: booking.leadId },
           data: { stage: 'WON', converted: true },
+        });
+      }
+
+      if (isLegacyUnpaidSplit) {
+        // Consolidate legacy 3 split stages into ONE complete due balance row
+        await prisma.paymentStage.deleteMany({
+          where: {
+            id: { in: booking.paymentStages.map((s) => s.id) },
+          },
         });
       }
 
