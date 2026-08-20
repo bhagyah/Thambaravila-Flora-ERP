@@ -1,0 +1,320 @@
+/* Leaflet map styles — required for tiles and markers to render */
+@import 'leaflet/dist/leaflet.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --flora-green: #4E9D82;
+  --flora-sage: #6BAF91;
+  --flora-dark: #222826;
+  --flora-darker: #171c1a;
+  --flora-card: rgba(255, 255, 255, 0.08);
+  --flora-border: rgba(255, 255, 255, 0.14);
+  --flora-text: #f8faf9;
+}
+
+html {
+  min-height: 100%;
+  background: var(--flora-dark);
+  color-scheme: dark;
+  transition: background-color 350ms ease, color 350ms ease;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--flora-text);
+  background-color: var(--flora-dark);
+  background-image:
+    radial-gradient(circle at 14% 12%, rgba(107, 175, 145, 0.18) 0%, transparent 28%),
+    radial-gradient(circle at 82% 8%, rgba(78, 157, 130, 0.12) 0%, transparent 24%),
+    radial-gradient(circle at 50% 100%, rgba(255, 255, 255, 0.05) 0%, transparent 34%),
+    linear-gradient(180deg, rgba(34, 40, 38, 0.98) 0%, rgba(23, 28, 26, 1) 100%);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+}
+
+@layer components {
+  .app-shell {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .app-shell-wash {
+    background:
+      radial-gradient(circle at 18% 16%, rgba(107, 175, 145, 0.14) 0%, transparent 30%),
+      radial-gradient(circle at 86% 12%, rgba(78, 157, 130, 0.1) 0%, transparent 24%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.015) 42%, transparent 100%);
+  }
+
+  .app-shell-floral {
+    background-image: url('/dashboard-floral-bg.png');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center right;
+    opacity: 0.18;
+    mix-blend-mode: normal;
+  }
+
+  .dashboard-shell button,
+  .dashboard-shell a,
+  .dashboard-shell input,
+  .dashboard-shell select,
+  .dashboard-shell textarea {
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease,
+      background-color 180ms ease,
+      border-color 180ms ease,
+      color 180ms ease,
+      opacity 180ms ease;
+  }
+
+  .dashboard-shell button:hover,
+  .dashboard-shell a:hover {
+    transform: translateY(-1px);
+  }
+
+  .dashboard-shell button:active,
+  .dashboard-shell a:active {
+    transform: translateY(0) scale(0.99);
+  }
+
+  .dashboard-shell main > div.min-h-screen,
+  .dashboard-shell main > section.min-h-screen {
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
+  .dashboard-shell .bg-flora-dark,
+  .dashboard-shell .bg-flora-dark\/90,
+  .dashboard-shell .bg-flora-dark\/95,
+  .dashboard-shell .bg-flora-darker,
+  .dashboard-shell .bg-flora-darker\/60,
+  .dashboard-shell .bg-flora-darker\/80,
+  .dashboard-shell .bg-flora-card,
+  .dashboard-shell .bg-slate-950,
+  .dashboard-shell .bg-slate-950\/95,
+  .dashboard-shell .bg-slate-950\/90,
+  .dashboard-shell .bg-slate-950\/80,
+  .dashboard-shell .bg-slate-950\/70,
+  .dashboard-shell .bg-slate-900,
+  .dashboard-shell .bg-slate-900\/95,
+  .dashboard-shell .bg-slate-900\/90,
+  .dashboard-shell .bg-slate-900\/80,
+  .dashboard-shell .bg-slate-900\/70,
+  .dashboard-shell .bg-slate-800,
+  .dashboard-shell .bg-slate-800\/95,
+  .dashboard-shell .bg-slate-800\/90,
+  .dashboard-shell .bg-slate-800\/80,
+  .dashboard-shell .bg-slate-800\/70,
+  .dashboard-shell .bg-slate-700 {
+    background-color: rgba(18, 24, 22, 0.86) !important;
+    background-image: linear-gradient(180deg, rgba(107, 175, 145, 0.12), rgba(255, 255, 255, 0.03)) !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+    box-shadow: 0 10px 28px rgba(7, 15, 11, 0.22) !important;
+  }
+
+  .dashboard-shell .border-flora-border,
+  .dashboard-shell .border-flora-border\/60,
+  .dashboard-shell .border-slate-800,
+  .dashboard-shell .border-slate-800\/80,
+  .dashboard-shell .border-slate-700 {
+    border-color: rgba(255, 255, 255, 0.16) !important;
+  }
+
+  html.light .app-shell-wash {
+    background:
+      radial-gradient(circle at 18% 16%, rgba(107, 175, 145, 0.14) 0%, transparent 28%),
+      radial-gradient(circle at 86% 12%, rgba(78, 157, 130, 0.1) 0%, transparent 24%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(248, 250, 249, 0.45) 48%, rgba(255, 255, 255, 0.14) 100%);
+  }
+
+  html.light .app-shell-floral {
+    opacity: 0.28;
+    mix-blend-mode: normal;
+  }
+
+  html.light .dashboard-shell .bg-flora-dark,
+  html.light .dashboard-shell .bg-flora-dark\/90,
+  html.light .dashboard-shell .bg-flora-dark\/95,
+  html.light .dashboard-shell .bg-flora-darker,
+  html.light .dashboard-shell .bg-flora-darker\/60,
+  html.light .dashboard-shell .bg-flora-darker\/80,
+  html.light .dashboard-shell .bg-flora-card,
+  html.light .dashboard-shell .bg-slate-950,
+  html.light .dashboard-shell .bg-slate-950\/95,
+  html.light .dashboard-shell .bg-slate-950\/90,
+  html.light .dashboard-shell .bg-slate-950\/80,
+  html.light .dashboard-shell .bg-slate-950\/70,
+  html.light .dashboard-shell .bg-slate-900,
+  html.light .dashboard-shell .bg-slate-900\/95,
+  html.light .dashboard-shell .bg-slate-900\/90,
+  html.light .dashboard-shell .bg-slate-900\/80,
+  html.light .dashboard-shell .bg-slate-900\/70,
+  html.light .dashboard-shell .bg-slate-800,
+  html.light .dashboard-shell .bg-slate-800\/95,
+  html.light .dashboard-shell .bg-slate-800\/90,
+  html.light .dashboard-shell .bg-slate-800\/80,
+  html.light .dashboard-shell .bg-slate-800\/70,
+  html.light .dashboard-shell .bg-slate-700 {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(243, 248, 245, 0.9)) !important;
+    border-color: rgba(34, 40, 38, 0.12) !important;
+    box-shadow: 0 10px 28px rgba(34, 40, 38, 0.1) !important;
+  }
+
+  html.light .dashboard-shell .text-white,
+  html.light .dashboard-shell .text-white\/90,
+  html.light .dashboard-shell .text-white\/80,
+  html.light .dashboard-shell .text-white\/70,
+  html.light .dashboard-shell .text-slate-50 {
+    color: #111827 !important;
+  }
+
+  html.light .dashboard-shell .border-flora-border,
+  html.light .dashboard-shell .border-flora-border\/60,
+  html.light .dashboard-shell .border-slate-800,
+  html.light .dashboard-shell .border-slate-800\/80,
+  html.light .dashboard-shell .border-slate-700 {
+    border-color: rgba(34, 40, 38, 0.12) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html,
+  body,
+  .dashboard-shell *,
+  .dashboard-shell *::before,
+  .dashboard-shell *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Light Theme Overrides */
+html.light, body.light {
+  --flora-dark: #ffffff;
+  --flora-darker: #f3f8f5;
+  --flora-card: rgba(34, 40, 38, 0.05);
+  --flora-border: rgba(34, 40, 38, 0.12);
+  --flora-text: #0f172a;
+  color-scheme: light;
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+  background-image: 
+    radial-gradient(circle at 90% 10%, rgba(107, 175, 145, 0.18) 0%, transparent 40%),
+    radial-gradient(circle at 10% 90%, rgba(78, 157, 130, 0.12) 0%, transparent 50%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(243, 248, 245, 1) 100%) !important;
+}
+
+body.light {
+  background-image:
+    radial-gradient(circle at 14% 12%, rgba(107, 175, 145, 0.12) 0%, transparent 30%),
+    radial-gradient(circle at 82% 8%, rgba(78, 157, 130, 0.08) 0%, transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(243, 248, 245, 1) 100%) !important;
+}
+
+::selection {
+  background: rgba(107, 175, 145, 0.28);
+  color: inherit;
+}
+
+/* Light Mode Element & Color Overrides */
+html.light .bg-flora-dark,
+html.light .bg-flora-dark\/90,
+html.light .bg-flora-dark\/95 {
+  background-color: #f0f4f2 !important;
+  color: #0f172a !important;
+}
+
+html.light .bg-flora-darker,
+html.light .bg-flora-darker\/60,
+html.light .bg-flora-darker\/80 {
+  background-color: #e0e9e4 !important;
+  color: #0f172a !important;
+}
+
+html.light .bg-flora-card {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html.light .bg-slate-900,
+html.light .bg-slate-900\/90,
+html.light .bg-slate-900\/80,
+html.light .bg-slate-900\/70,
+html.light .bg-slate-950,
+html.light .bg-slate-950\/80,
+html.light .bg-slate-950\/90,
+html.light .bg-slate-950\/70,
+html.light .bg-slate-950\/40,
+html.light .bg-slate-800,
+html.light .bg-slate-800\/90,
+html.light .bg-slate-800\/80,
+html.light .bg-slate-800\/70,
+html.light .bg-gray-900,
+html.light .bg-gray-800 {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html.light .border-flora-border,
+html.light .border-flora-border\/60,
+html.light .border-slate-800,
+html.light .border-slate-800\/80,
+html.light .border-slate-800\/70,
+html.light .border-slate-700,
+html.light .border-slate-700 {
+  border-color: #cad7d0 !important;
+}
+
+html.light .text-slate-100,
+html.light .text-slate-200,
+html.light .text-slate-300 {
+  color: #111827 !important;
+}
+
+html.light .text-slate-400 {
+  color: #475569 !important;
+}
+
+html.light .text-slate-500 {
+  color: #475569 !important;
+}
+
+html.light .text-slate-600 {
+  color: #334155 !important;
+}
+
+html.light .dashboard-shell svg text,
+html.light .dashboard-shell svg tspan {
+  fill: #475569 !important;
+}
+
+html.light .dashboard-shell svg line {
+  stroke: #cbd5e1 !important;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--flora-darker);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--flora-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--flora-green);
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Thambaravila Labour Attendance",
+  "short_name": "Flora Labour",
+  "description": "Clock attendance and request daily meals at Thambaravila Flora.",
+  "id": "/labour",
+  "start_url": "/labour",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#edf3ee",
+  "theme_color": "#173b2d",
+  "icons": [
+    { "src": "/labour-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/labour-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

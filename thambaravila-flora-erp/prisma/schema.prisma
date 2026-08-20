@@ -1,0 +1,1003 @@
+// This is your Prisma schema file for Thambaravila Flora ERP
+// Two-Pipeline Architecture: Lead (Pre-Conversion) & Booking (Post-Conversion)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ========================================
+// RBAC & AUTH MODELS
+// ========================================
+
+model User {
+  id                         String    @id @default(cuid())
+  email                      String    @unique
+  name                       String
+  passwordHash               String    @map("password_hash")
+  totpSecret                 String?   @map("totp_secret") // Legacy plaintext secret; cleared after secure migration
+  totpSecretEncrypted        String?   @map("totp_secret_encrypted")
+  totpPendingSecretEncrypted String?   @map("totp_pending_secret_encrypted")
+  totpBackupCodesEncrypted   String?   @map("totp_backup_codes_encrypted")
+  totpLastUsedStep           Int?      @map("totp_last_used_step")
+  roleId                     String    @map("role_id")
+  role                       Role      @relation(fields: [roleId], references: [id])
+  isActive                   Boolean   @default(true) @map("is_active")
+  idNumber                   String?   @map("id_number")
+  phone                      String?
+  avatarUrl                  String?   @map("avatar_url")
+  lastLogin                  DateTime? @map("last_login")
+  failedAttempts             Int       @default(0) @map("failed_attempts") // For rate limiting
+  lockedUntil                DateTime? @map("locked_until") // Account lockout
+  createdAt                  DateTime  @default(now()) @map("created_at")
+  updatedAt                  DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  auditLogs                  AuditLog[]
+  activityLogs               ActivityLog[]
+  paymentsConfirmed          PaymentStage[]               @relation("PaymentConfirmedBy")
+  paymentReceiptsConfirmed   PaymentReceipt[]             @relation("PaymentReceiptConfirmedBy")
+  financialChangesRequested  FinancialAdjustmentRequest[] @relation("FinancialAdjustmentRequestedBy")
+  financialChangesDecided    FinancialAdjustmentRequest[] @relation("FinancialAdjustmentDecidedBy")
+  customersAssigned          Customer[]                   @relation("CustomerSalesManager")
+  leadsAssigned              Lead[]                       @relation("LeadAssignedSalesExec")
+  bookingsSalesExec          Booking[]                    @relation("BookingSalesExec")
+  requestedDiscountApprovals DiscountApproval[]           @relation("DiscountRequestedBy")
+  approvedDiscountApprovals  DiscountApproval[]           @relation("DiscountApprovedBy")
+  requestedDeletionRequests  BookingDeletionRequest[]     @relation("DeletionRequestedBy")
+  approvedDeletionRequests   BookingDeletionRequest[]     @relation("DeletionApprovedBy")
+  requestedCustomerDeletions CustomerDeletionRequest[]    @relation("CustomerDeletionRequestedBy")
+  approvedCustomerDeletions  CustomerDeletionRequest[]    @relation("CustomerDeletionApprovedBy")
+  loginSecurityEvents        LoginSecurityEvent[]
+  systemBackups              SystemBackup[]
+  scheduledLiabilities       ScheduledLiability[]
+  liabilityPaymentsPaid      ScheduledLiabilityPayment[]  @relation("LiabilityPaidBy")
+  dailyMealRequests          DailyMealRequest[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isSystem    Boolean  @default(false) @map("is_system") // System roles (Owner, IT) cannot be deleted
+  canBeEdited Boolean  @default(true) @map("can_be_edited") // Owner role cannot be edited
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  users           User[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  name        String   @unique // e.g., "view_financial_dashboard"
+  description String?
+  category    String // e.g., "financial", "customer", "system"
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String     @map("role_id")
+  permissionId String     @map("permission_id")
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id])
+  action     String // e.g., "login", "payment_confirmed", "role_changed"
+  entityType String?  @map("entity_type") // e.g., "payment", "user", "role"
+  entityId   String?  @map("entity_id")
+  details    Json? // Additional context
+  ipAddress  String?  @map("ip_address")
+  timestamp  DateTime @default(now())
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+model LoginSecurityEvent {
+  id                String   @id @default(cuid())
+  userId            String?  @map("user_id")
+  user              User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  attemptedEmail    String?  @map("attempted_email")
+  success           Boolean  @default(false)
+  failureReason     String?  @map("failure_reason")
+  ipAddress         String?  @map("ip_address")
+  latitude          Float?
+  longitude         Float?
+  locationAccuracy  Float?   @map("location_accuracy")
+  locationGranted   Boolean  @default(false) @map("location_granted")
+  userAgent         String?  @map("user_agent")
+  deviceFingerprint String?  @map("device_fingerprint")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([attemptedEmail])
+  @@index([success])
+  @@index([createdAt])
+  @@map("login_security_events")
+}
+
+model SystemBackup {
+  id            String   @id @default(cuid())
+  createdById   String?  @map("created_by_id")
+  createdBy     User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  fileName      String   @map("file_name")
+  encryptedData String   @map("encrypted_data")
+  checksum      String
+  sizeBytes     Int      @map("size_bytes")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([createdById])
+  @@index([createdAt])
+  @@map("system_backups")
+}
+
+/// Complete append-only business activity trail. Actor identity and role are
+/// snapshotted so history remains readable after later user or role changes.
+model ActivityLog {
+  id           String   @id @default(cuid())
+  actorUserId  String?  @map("actor_user_id")
+  actor        User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  actorName    String   @map("actor_name")
+  actorEmail   String?  @map("actor_email")
+  actorRole    String   @map("actor_role")
+  action       String
+  category     String   @default("BUSINESS")
+  entityType   String?  @map("entity_type")
+  entityId     String?  @map("entity_id")
+  summary      String?
+  httpMethod   String?  @map("http_method")
+  route        String?
+  outcome      String   @default("SUCCESS")
+  statusCode   Int?     @map("status_code")
+  changedData  Json?    @map("changed_data")
+  previousData Json?    @map("previous_data")
+  newData      Json?    @map("new_data")
+  metadata     Json?
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent")
+  occurredAt   DateTime @default(now()) @map("occurred_at")
+
+  @@index([actorUserId])
+  @@index([actorRole])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([occurredAt])
+  @@map("activity_logs")
+}
+
+// ========================================
+// CORE BUSINESS MODELS
+// ========================================
+
+model Customer {
+  id                     String         @id @default(cuid())
+  customerId             String         @unique @map("customer_id") // Human-readable: TF-2026-0043
+  name                   String
+  phone                  String
+  email                  String?
+  address                String?
+  source                 CustomerSource @default(OTHER)
+  nicNumber              String?        @map("nic_number")
+  dateOfBirth            DateTime?      @map("date_of_birth")
+  gender                 String?        @map("gender")
+  socialHandle           String?        @map("social_handle")
+  additionalNotes        String?        @map("additional_notes")
+  assignedSalesManagerId String?        @map("assigned_sales_manager_id")
+  assignedSalesManager   User?          @relation("CustomerSalesManager", fields: [assignedSalesManagerId], references: [id])
+  createdAt              DateTime       @default(now()) @map("created_at")
+  updatedAt              DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  leads            Lead[]
+  bookings         Booking[]
+  deletionRequests CustomerDeletionRequest[]
+
+  @@index([customerId])
+  @@map("customers")
+}
+
+enum CustomerSource {
+  REFERRAL
+  SOCIAL
+  WALK_IN
+  WEBSITE
+  OTHER
+}
+
+// ========================================
+// PRE-CONVERSION: LEAD MODEL
+// ========================================
+
+model Lead {
+  id                   String     @id // Format: L-001, L-002...
+  customerId           String     @map("customer_id")
+  customer             Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  inquiryDate          DateTime   @default(now()) @map("inquiry_date")
+  tentativeWeddingDate DateTime?  @map("tentative_wedding_date")
+  tentativeVenue       String?    @map("tentative_venue")
+  estimatedGuestCount  Int?       @map("estimated_guest_count")
+  budgetRange          String?    @map("budget_range")
+  leadSource           LeadSource @default(INSTAGRAM_DM) @map("lead_source")
+  stage                LeadStage  @default(NEW_INQUIRY)
+  nextFollowupDate     DateTime?  @map("next_followup_date")
+  assignedSalesExecId  String?    @map("assigned_sales_exec_id")
+  assignedSalesExec    User?      @relation("LeadAssignedSalesExec", fields: [assignedSalesExecId], references: [id])
+  interestNotes        String?    @map("interest_notes")
+  converted            Boolean    @default(false)
+  createdAt            DateTime   @default(now()) @map("created_at")
+  updatedAt            DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  bookings Booking[]
+
+  @@index([customerId])
+  @@index([stage])
+  @@index([leadSource])
+  @@map("leads")
+}
+
+enum LeadSource {
+  INSTAGRAM_DM
+  FACEBOOK
+  TIKTOK
+  REFERRAL
+  WEDDING_PLANNER_PARTNER
+  WALK_IN
+  WEBSITE
+  GOOGLE_SEARCH
+  BRIDAL_FAIR
+}
+
+enum LeadStage {
+  NEW_INQUIRY
+  CONTACTED
+  SITE_VISIT_SCHEDULED
+  PROPOSAL_SENT
+  NEGOTIATION
+  WON
+  LOST
+}
+
+// ========================================
+// DIRECTORIES: VENUE & VENDOR
+// ========================================
+
+model Venue {
+  id                  String   @id @default(cuid())
+  name                String
+  cityArea            String   @map("city_area")
+  fullAddress         String?  @map("full_address")
+  venueType           String   @map("venue_type") // Hotel Ballroom, Beach Resort, Private Villa, Banquet Hall, Garden
+  contactPerson       String?  @map("contact_person")
+  phone               String?
+  email               String?
+  maxCapacity         Int?     @map("max_capacity")
+  indoorOutdoor       String?  @map("indoor_outdoor") // Indoor, Outdoor, Both
+  loadInNotes         String?  @map("load_in_notes")
+  floralRestrictions  String?  @map("floral_restrictions")
+  parkingAvailability String?  @map("parking_availability")
+  powerAccess         String?  @map("power_access")
+  inHouseCatering     Boolean  @default(false) @map("in_house_catering")
+  notesRating         Float?   @map("notes_rating")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  ceremonyBookings  Booking[] @relation("CeremonyVenue")
+  receptionBookings Booking[] @relation("ReceptionVenue")
+
+  @@map("venues")
+}
+
+model Vendor {
+  id                String   @id @default(cuid())
+  name              String
+  category          String // Photographer, Decorator-Coordinator, Caterer, Florist Wholesaler, Other
+  contactPerson     String?  @map("contact_person")
+  phone             String
+  email             String?
+  areaServed        String?  @map("area_served")
+  reliabilityRating Int?     @default(5) @map("reliability_rating") // 1-5
+  notes             String?
+  status            String   @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  payments             VendorPayment[]
+  photographerBookings Booking[]       @relation("PhotographerVendor")
+  decoratorBookings    Booking[]       @relation("DecoratorVendor")
+  catererBookings      Booking[]       @relation("CatererVendor")
+
+  @@map("vendors")
+}
+
+// ========================================
+// POST-CONVERSION: BOOKING MODEL
+// ========================================
+
+model Booking {
+  id                      String                    @id // Format: B-001, B-002...
+  customerId              String                    @map("customer_id")
+  customer                Customer                  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  leadId                  String?                   @map("lead_id")
+  lead                    Lead?                     @relation(fields: [leadId], references: [id])
+  weddingDate             DateTime                  @map("wedding_date")
+  dayOfWeek               String                    @map("day_of_week")
+  ceremonyVenueId         String?                   @map("ceremony_venue_id")
+  ceremonyVenue           Venue?                    @relation("CeremonyVenue", fields: [ceremonyVenueId], references: [id])
+  ceremonyTime            String?                   @map("ceremony_time")
+  receptionVenueId        String?                   @map("reception_venue_id")
+  receptionVenue          Venue?                    @relation("ReceptionVenue", fields: [receptionVenueId], references: [id])
+  receptionTime           String?                   @map("reception_time")
+  floristSetupTime        String?                   @map("florist_setup_time")
+  guestCount              Int?                      @map("guest_count")
+  packageType             PackageType               @default(CLASSIC_ELEGANCE) @map("package_type")
+  serviceScope            ServiceScope              @default(FULL_WEDDING_PACKAGE) @map("service_scope")
+  colourTheme             String?                   @map("colour_theme")
+  salesExecId             String?                   @map("sales_exec_id")
+  salesExec               User?                     @relation("BookingSalesExec", fields: [salesExecId], references: [id])
+  totalQuoteAmount        Int                       @map("total_quote_amount") // Stored in cents
+  depositPercent          Float                     @default(30.0) @map("deposit_percent")
+  depositAmount           Int                       @map("deposit_amount") // Computed
+  depositPaidDate         DateTime?                 @map("deposit_paid_date")
+  balanceDueAmount        Int                       @map("balance_due_amount") // Computed
+  balanceDueDate          DateTime?                 @map("balance_due_date")
+  paymentStatus           BookingPaymentStatus      @default(NOT_STARTED) @map("payment_status")
+  bookingStatus           BookingStatus             @default(CONFIRMED) @map("booking_status")
+  confirmationStatus      BookingConfirmationStatus @default(PENDING) @map("confirmation_status")
+  quotationAttachmentUrl  String?                   @map("quotation_attachment_url")
+  quotationAttachmentName String?                   @map("quotation_attachment_name")
+  quotationAttachmentType String?                   @map("quotation_attachment_type")
+  jobSheetAttachmentUrl   String?                   @map("job_sheet_attachment_url")
+  jobSheetAttachmentName  String?                   @map("job_sheet_attachment_name")
+  jobSheetAttachmentType  String?                   @map("job_sheet_attachment_type")
+  quoteOutcomeReason      String?                   @map("quote_outcome_reason")
+  daysUntilWedding        Int                       @default(0) @map("days_until_wedding") // Computed
+  notes                   String?
+  photographerVendorId    String?                   @map("photographer_vendor_id")
+  photographerVendor      Vendor?                   @relation("PhotographerVendor", fields: [photographerVendorId], references: [id])
+  decoratorVendorId       String?                   @map("decorator_vendor_id")
+  decoratorVendor         Vendor?                   @relation("DecoratorVendor", fields: [decoratorVendorId], references: [id])
+  catererVendorId         String?                   @map("caterer_vendor_id")
+  catererVendor           Vendor?                   @relation("CatererVendor", fields: [catererVendorId], references: [id])
+  createdAt               DateTime                  @default(now()) @map("created_at")
+  updatedAt               DateTime                  @updatedAt @map("updated_at")
+
+  // Relations
+  paymentStages     PaymentStage[]
+  events            Event[]
+  discountApprovals DiscountApproval[]
+  deletionRequests  BookingDeletionRequest[]
+
+  @@index([customerId])
+  @@index([leadId])
+  @@index([bookingStatus])
+  @@index([paymentStatus])
+  @@index([weddingDate])
+  @@map("bookings")
+}
+
+enum PackageType {
+  ESSENTIAL_BLOOM
+  CLASSIC_ELEGANCE
+  PREMIUM_BLOOM_PACKAGE
+  SIGNATURE_LUXURY
+  BESPOKE_CUSTOM
+}
+
+enum ServiceScope {
+  CEREMONY_ONLY
+  RECEPTION_ONLY
+  CEREMONY_RECEPTION
+  HOME_GOING
+  ENGAGEMENT
+  FULL_WEDDING_PACKAGE
+}
+
+enum BookingPaymentStatus {
+  NOT_STARTED
+  DEPOSIT_DUE
+  DEPOSIT_PAID
+  PARTIAL_PAYMENT
+  PAID_IN_FULL
+  OVERDUE
+}
+
+enum BookingStatus {
+  INQUIRY
+  CONFIRMED
+  IN_DESIGN
+  IN_PRODUCTION
+  DELIVERED
+  COMPLETED
+  CANCELLED
+}
+
+enum BookingConfirmationStatus {
+  PENDING
+  CONFIRMED
+  NOT_CONFIRMED
+}
+
+// ========================================
+// PAYMENT & DEADLINE MODELS
+// ========================================
+
+model PaymentStage {
+  id                String           @id @default(cuid())
+  bookingId         String           @map("booking_id")
+  booking           Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  stageType         PaymentStageType @map("stage_type")
+  amountDue         Int              @map("amount_due")
+  dueDate           DateTime         @map("due_date")
+  amountPaid        Int              @default(0) @map("amount_paid")
+  paidDate          DateTime?        @map("paid_date")
+  paidConfirmedById String?          @map("paid_confirmed_by_id")
+  paidConfirmedBy   User?            @relation("PaymentConfirmedBy", fields: [paidConfirmedById], references: [id])
+  status            PaymentStatus    @default(PENDING)
+  notificationSent  Boolean          @default(false) @map("notification_sent")
+  receipt           PaymentReceipt?
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+
+  @@index([bookingId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("payment_stages")
+}
+
+model PaymentReceipt {
+  id             String       @id @default(cuid())
+  paymentStageId String       @unique @map("payment_stage_id")
+  paymentStage   PaymentStage @relation(fields: [paymentStageId], references: [id], onDelete: Cascade)
+  amount         Int
+  receivedAt     DateTime     @map("received_at")
+  paymentMethod  String?      @map("payment_method")
+  notes          String?
+  confirmedById  String?      @map("confirmed_by_id")
+  confirmedBy    User?        @relation("PaymentReceiptConfirmedBy", fields: [confirmedById], references: [id])
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  @@index([receivedAt])
+  @@index([confirmedById])
+  @@map("payment_receipts")
+}
+
+enum PaymentStageType {
+  ADVANCE
+  FLOWER
+  FINAL
+}
+
+enum PaymentStatus {
+  PENDING
+  DUE_SOON
+  OVERDUE
+  PAID
+}
+
+model PaymentDeadlineRule {
+  id                     String           @id @default(cuid())
+  stageType              PaymentStageType @unique @map("stage_type")
+  daysBeforeDueToNotify  Int              @map("days_before_due_to_notify")
+  defaultDaysFromEnquiry Int?             @map("default_days_from_enquiry")
+  defaultDaysBeforeEvent Int?             @map("default_days_before_event")
+  createdAt              DateTime         @default(now()) @map("created_at")
+  updatedAt              DateTime         @updatedAt @map("updated_at")
+
+  @@map("payment_deadline_rules")
+}
+
+// ========================================
+// AUXILIARY & MODULE MODELS
+// ========================================
+
+model Expense {
+  id                        String                     @id @default(cuid())
+  expenseId                 String?                    @unique @map("expense_id") // Human-readable: EXP-20260723-001 (used for idempotent import)
+  date                      DateTime                   @default(now())
+  bookingId                 String?                    @map("booking_id") // FK nullable — linked via Wedding ID
+  clientName                String?                    @map("client_name")
+  description               String
+  category                  String // Flowers, Labour, Transport, Materials, Venue/Site Cost, Rent, Utilities, Marketing, Office/Admin, Supplier Advance, Owner Drawing, Other
+  supplierName              String?                    @map("supplier_name") // Denormalized for simplicity
+  supplierContact           String?                    @map("supplier_contact")
+  department                ExpenseDepartment?         @default(OTHER_DEPT)
+  paymentMethod             ExpensePaymentMethod?      @default(CASH) @map("payment_method")
+  amount                    Int // Stored in cents/paisa
+  taxVat                    Int                        @default(0) @map("tax_vat") // VAT/Tax in cents
+  totalAmount               Int                        @default(0) @map("total_amount") // amount + taxVat in cents
+  paidByName                String?                    @map("paid_by_name") // Denormalized payer name
+  paymentStatus             ExpensePaymentStatus       @default(PAID) @map("payment_status")
+  approvalStatus            ExpenseApprovalStatus      @default(APPROVED) @map("approval_status")
+  notes                     String?
+  importedFrom              String?                    @map("imported_from") // e.g. "TF - Expense Tracker.xlsx"
+  createdById               String?                    @map("created_by_id")
+  createdAt                 DateTime                   @default(now()) @map("created_at")
+  updatedAt                 DateTime                   @updatedAt @map("updated_at")
+  scheduledLiabilityPayment ScheduledLiabilityPayment?
+
+  @@index([date])
+  @@index([category])
+  @@index([bookingId])
+  @@map("expenses")
+}
+
+model FinancialAdjustmentRequest {
+  id                  String                    @id @default(cuid())
+  sourceType          FinancialRecordType       @map("source_type")
+  sourceId            String                    @map("source_id")
+  action              FinancialAdjustmentAction
+  status              FinancialAdjustmentStatus @default(PENDING)
+  proposedAmount      Int?                      @map("proposed_amount")
+  proposedDate        DateTime?                 @map("proposed_date")
+  proposedDescription String?                   @map("proposed_description")
+  proposedCategory    String?                   @map("proposed_category")
+  reason              String
+  snapshot            Json
+  requestedById       String                    @map("requested_by_id")
+  requestedBy         User                      @relation("FinancialAdjustmentRequestedBy", fields: [requestedById], references: [id])
+  decidedById         String?                   @map("decided_by_id")
+  decidedBy           User?                     @relation("FinancialAdjustmentDecidedBy", fields: [decidedById], references: [id])
+  decisionNote        String?                   @map("decision_note")
+  decidedAt           DateTime?                 @map("decided_at")
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @updatedAt @map("updated_at")
+
+  @@index([sourceType, sourceId])
+  @@index([status, createdAt])
+  @@index([requestedById])
+  @@map("financial_adjustment_requests")
+}
+
+enum FinancialRecordType {
+  RECEIPT
+  EXPENSE
+}
+
+enum FinancialAdjustmentAction {
+  EDIT
+  DELETE
+}
+
+enum FinancialAdjustmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ScheduledLiability {
+  id          String                      @id @default(cuid())
+  name        String
+  description String?
+  category    String
+  amount      Int
+  dueDay      Int                         @map("due_day")
+  startDate   DateTime                    @map("start_date")
+  isActive    Boolean                     @default(true) @map("is_active")
+  createdById String                      @map("created_by_id")
+  createdBy   User                        @relation(fields: [createdById], references: [id])
+  payments    ScheduledLiabilityPayment[]
+  createdAt   DateTime                    @default(now()) @map("created_at")
+  updatedAt   DateTime                    @updatedAt @map("updated_at")
+
+  @@index([isActive])
+  @@map("scheduled_liabilities")
+}
+
+model ScheduledLiabilityPayment {
+  id          String                          @id @default(cuid())
+  liabilityId String                          @map("liability_id")
+  liability   ScheduledLiability              @relation(fields: [liabilityId], references: [id], onDelete: Cascade)
+  period      String
+  dueDate     DateTime                        @map("due_date")
+  amount      Int
+  status      ScheduledLiabilityPaymentStatus @default(SCHEDULED)
+  paidDate    DateTime?                       @map("paid_date")
+  paidById    String?                         @map("paid_by_id")
+  paidBy      User?                           @relation("LiabilityPaidBy", fields: [paidById], references: [id])
+  expenseId   String?                         @unique @map("expense_id")
+  expense     Expense?                        @relation(fields: [expenseId], references: [id])
+  createdAt   DateTime                        @default(now()) @map("created_at")
+  updatedAt   DateTime                        @updatedAt @map("updated_at")
+
+  @@unique([liabilityId, period])
+  @@index([status])
+  @@index([dueDate])
+  @@map("scheduled_liability_payments")
+}
+
+enum ScheduledLiabilityPaymentStatus {
+  SCHEDULED
+  PAID
+  CANCELLED
+}
+
+model HistoricalIncome {
+  id           String   @id @default(cuid())
+  importId     String   @unique @map("import_id") // Unique key for idempotency (row fingerprint)
+  date         DateTime
+  bookingRef   String?  @map("booking_ref") // Wedding ID / Booking ID from source Excel
+  clientName   String?  @map("client_name")
+  description  String?
+  amount       Int // Stored in cents
+  paymentType  String?  @map("payment_type") // e.g. Advance, Final, Full
+  receivedVia  String?  @map("received_via") // Cash, Bank, etc.
+  importedFrom String?  @map("imported_from") // Source filename
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([date])
+  @@index([bookingRef])
+  @@map("historical_incomes")
+}
+
+enum ExpensePaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CARD
+  CHEQUE
+  ONLINE
+  OTHER_PAYMENT
+}
+
+enum ExpenseDepartment {
+  WEDDING_OPERATIONS
+  SALES
+  FINANCE
+  OWNER_DESIGNER
+  ADMIN
+  MARKETING
+  OTHER_DEPT
+}
+
+enum ExpensePaymentStatus {
+  PAID
+  UNPAID
+  PARTIALLY_PAID
+  REIMBURSED
+  TO_REIMBURSE
+}
+
+enum ExpenseApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model VendorPayment {
+  id          String    @id @default(cuid())
+  vendorId    String    @map("vendor_id")
+  vendor      Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  amount      Int // Stored in cents/paisa
+  dueDate     DateTime  @map("due_date")
+  paidDate    DateTime? @map("paid_date")
+  status      String    @default("PENDING") // PENDING, PAID, OVERDUE
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@map("vendor_payments")
+}
+
+model DiscountApproval {
+  id            String   @id @default(cuid())
+  bookingId     String   @map("booking_id")
+  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  requestedById String   @map("requested_by_id")
+  requestedBy   User?    @relation("DiscountRequestedBy", fields: [requestedById], references: [id])
+  amount        Int // Stored in cents
+  reason        String
+  status        String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedById  String?  @map("approved_by_id")
+  approvedBy    User?    @relation("DiscountApprovedBy", fields: [approvedById], references: [id])
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("discount_approvals")
+}
+
+model BookingDeletionRequest {
+  id            String   @id @default(cuid())
+  bookingId     String   @map("booking_id")
+  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  requestedById String?  @map("requested_by_id")
+  requestedBy   User?    @relation("DeletionRequestedBy", fields: [requestedById], references: [id])
+  customerName  String?  @map("customer_name")
+  reason        String
+  status        String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedById  String?  @map("approved_by_id")
+  approvedBy    User?    @relation("DeletionApprovedBy", fields: [approvedById], references: [id])
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("booking_deletion_requests")
+}
+
+model CustomerDeletionRequest {
+  id            String   @id @default(cuid())
+  customerId    String   @map("customer_id")
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  requestedById String?  @map("requested_by_id")
+  requestedBy   User?    @relation("CustomerDeletionRequestedBy", fields: [requestedById], references: [id])
+  customerName  String?  @map("customer_name")
+  reason        String
+  status        String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedById  String?  @map("approved_by_id")
+  approvedBy    User?    @relation("CustomerDeletionApprovedBy", fields: [approvedById], references: [id])
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("customer_deletion_requests")
+}
+
+model SalesTarget {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  userName       String?  @map("user_name")
+  targetAmount   Int      @map("target_amount") // Stored in cents
+  achievedAmount Int      @default(0) @map("achieved_amount") // Stored in cents
+  period         String // e.g., "2026-07-23", "2026-W30", "2026-07", "2026"
+  timeframe      String   @default("MONTHLY") // DAILY, WEEKLY, MONTHLY, YEARLY
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("sales_targets")
+}
+
+model Event {
+  id              String   @id @default(cuid())
+  bookingId       String   @map("booking_id")
+  booking         Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  title           String
+  date            DateTime
+  venue           String?
+  coordinatorId   String?  @map("coordinator_id")
+  coordinatorName String?  @map("coordinator_name")
+  status          String   @default("PLANNED") // PLANNED, IN_PROGRESS, COMPLETED, CANCELLED
+  checklistJson   String?  @map("checklist_json")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("events")
+}
+
+model SocialCampaign {
+  id            String    @id @default(cuid())
+  title         String
+  platform      String // Instagram, Facebook, TikTok, Google
+  startDate     DateTime  @map("start_date")
+  endDate       DateTime? @map("end_date")
+  budget        Int       @default(0) // Stored in cents
+  leadsCaptured Int       @default(0) @map("leads_captured")
+  status        String    @default("ACTIVE") // ACTIVE, COMPLETED, DRAFT
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@map("social_campaigns")
+}
+
+model ChatMessage {
+  id            String   @id @default(cuid())
+  senderId      String   @map("sender_id")
+  senderName    String   @map("sender_name")
+  recipientId   String?  @map("recipient_id")
+  recipientName String?  @map("recipient_name")
+  channel       String   @default("general") // general, sales, accountant, coordinator, direct
+  content       String
+  attachmentUrl String?  @map("attachment_url")
+  sentAt        DateTime @default(now()) @map("sent_at")
+
+  @@map("chat_messages")
+}
+
+model WorkSession {
+  id                     String    @id @default(cuid())
+  userId                 String    @map("user_id")
+  userName               String    @map("user_name")
+  startTime              DateTime  @map("start_time")
+  endTime                DateTime? @map("end_time")
+  duration               Int? // In minutes
+  notes                  String?
+  // --- Geofence Attendance Extension ---
+  clockInLatitude        Float?    @map("clock_in_latitude")
+  clockInLongitude       Float?    @map("clock_in_longitude")
+  clockInAccuracyMeters  Float?    @map("clock_in_accuracy_meters")
+  clockOutLatitude       Float?    @map("clock_out_latitude")
+  clockOutLongitude      Float?    @map("clock_out_longitude")
+  clockOutAccuracyMeters Float?    @map("clock_out_accuracy_meters")
+  geofenceId             String?   @map("geofence_id")
+  geofence               Geofence? @relation(fields: [geofenceId], references: [id])
+  locationVerified       Boolean   @default(false) @map("location_verified")
+  deviceInfo             String?   @map("device_info") // JSON string: browser, OS, userAgent
+  createdAt              DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([locationVerified])
+  @@map("work_sessions")
+}
+
+model DailyMealRequest {
+  id                   String    @id @default(cuid())
+  userId               String    @map("user_id")
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userName             String    @map("user_name")
+  serviceDate          String    @map("service_date")
+  breakfast            Boolean   @default(false)
+  lunch                Boolean   @default(false)
+  dinner               Boolean   @default(false)
+  breakfastRequestedAt DateTime? @map("breakfast_requested_at")
+  lunchRequestedAt     DateTime? @map("lunch_requested_at")
+  dinnerRequestedAt    DateTime? @map("dinner_requested_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  @@unique([userId, serviceDate])
+  @@index([serviceDate])
+  @@map("daily_meal_requests")
+}
+
+// ========================================
+// GEOFENCE & ATTENDANCE MODELS
+// ========================================
+
+/// Represents a named geographic zone used to validate attendance check-ins.
+/// IT/Owner managed. Supports multiple simultaneous active zones (e.g. shop + warehouse).
+/// NOTE: This is best-effort geofencing. Browser GPS can be spoofed by
+/// fake-location apps. This system prevents accidental off-site check-ins
+/// and provides a verifiable record, but is not tamper-proof.
+model Geofence {
+  id              String   @id @default(cuid())
+  name            String // e.g. "Main Shop", "Warehouse"
+  centerLatitude  Float    @map("center_latitude")
+  centerLongitude Float    @map("center_longitude")
+  radiusMeters    Int      @map("radius_meters") // The acceptance circle radius in metres
+  isActive        Boolean  @default(true) @map("is_active") // IT can disable without deleting
+  createdById     String   @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  workSessions     WorkSession[]
+  rejectedAttempts AttendanceAttemptLog[]
+
+  @@index([isActive])
+  @@map("geofences")
+}
+
+/// Audit log for every attendance attempt — successful or rejected.
+/// Rejected attempts (outside zone, weak GPS) are still recorded for IT review.
+/// This allows IT/Owner to spot repeated failed attempts or spoofing patterns.
+model AttendanceAttemptLog {
+  id                String    @id @default(cuid())
+  userId            String    @map("user_id")
+  userName          String    @map("user_name")
+  action            String // "CLOCK_IN" | "CLOCK_OUT"
+  latitude          Float?
+  longitude         Float?
+  accuracyMeters    Float?    @map("accuracy_meters")
+  result            String // "SUCCESS" | "REJECTED_OUTSIDE_ZONE" | "REJECTED_WEAK_GPS" | "REJECTED_NO_LOCATION"
+  rejectionReason   String?   @map("rejection_reason")
+  nearestGeofenceId String?   @map("nearest_geofence_id")
+  nearestGeofence   Geofence? @relation(fields: [nearestGeofenceId], references: [id])
+  nearestDistanceM  Float?    @map("nearest_distance_m") // Distance to closest zone centre
+  workSessionId     String?   @map("work_session_id") // Set only on SUCCESS
+  deviceInfo        String?   @map("device_info")
+  timestamp         DateTime  @default(now())
+
+  @@index([userId])
+  @@index([result])
+  @@index([timestamp])
+  @@map("attendance_attempt_logs")
+}
+
+/// Manual session override by IT/Owner. Required when GPS failure prevented
+/// a valid check-in on a legitimate work day. Fully audited.
+model WorkSessionOverride {
+  id               String   @id @default(cuid())
+  workSessionId    String   @map("work_session_id")
+  overriddenById   String   @map("overridden_by_id")
+  overriddenByName String   @map("overridden_by_name")
+  reason           String // Mandatory — explains why override was needed
+  originalData     String   @map("original_data") // JSON snapshot of original session
+  newData          String   @map("new_data") // JSON snapshot of corrected session
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([workSessionId])
+  @@map("work_session_overrides")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String?  @map("user_id")
+  roleName  String?  @map("role_name")
+  title     String
+  message   String
+  type      String   @default("INFO") // INFO, WARNING, SUCCESS, URGENT
+  isRead    Boolean  @default(false) @map("is_read")
+  link      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("notifications")
+}
+
+/// Business work schedule configuration — single-row table (upserted on save).
+/// Defines the standard working week used to calculate expected hours and
+/// attendance compliance for all staff. Configurable by Owner and IT/Admin.
+model WorkScheduleConfig {
+  id            String   @id @default("default")
+  /// Comma-separated day numbers: 1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat,7=Sun
+  /// Default "1,2,3,4,5,6" = Mon–Sat
+  workingDays   String   @default("1,2,3,4,5,6") @map("working_days")
+  /// 24-hour start time, e.g. "09:00"
+  workStartTime String   @default("09:00") @map("work_start_time")
+  /// 24-hour end time, e.g. "17:00"
+  workEndTime   String   @default("17:00") @map("work_end_time")
+  /// Grace period in minutes before clock-in is marked late
+  graceMinutes  Int      @default(15) @map("grace_minutes")
+  updatedById   String?  @map("updated_by_id")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("work_schedule_configs")
+}
+
+model LeaveRequest {
+  id            String    @id @default(cuid())
+  userId        String    @map("user_id")
+  userName      String    @map("user_name")
+  userRole      String    @map("user_role")
+  startDate     DateTime  @map("start_date")
+  endDate       DateTime  @map("end_date")
+  reason        String?
+  status        String    @default("Pending") // Pending, Approved, Rejected
+  requestedAt   DateTime  @default(now()) @map("requested_at")
+  approverId    String?   @map("approver_id")
+  approverName  String?   @map("approver_name")
+  decidedAt     DateTime? @map("decided_at")
+  decisionNotes String?   @map("decision_notes")
+
+  @@index([userId])
+  @@index([status])
+  @@index([userRole])
+  @@map("leave_requests")
+}
+
+/// Central business revenue target configuration.
+/// Stores master yearly target in LKR and automatically calculates daily,
+/// weekly, monthly, and custom range targets. Configurable by Owner.
+model SystemTargetConfig {
+  id            String   @id @default("default")
+  yearlyTarget  Float    @default(60000000) @map("yearly_target") // Yearly target in LKR (default 60 Million LKR)
+  updatedById   String?  @map("updated_by_id")
+  updatedByName String?  @map("updated_by_name")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("system_target_configs")
+}
