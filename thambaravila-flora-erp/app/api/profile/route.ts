@@ -44,12 +44,13 @@ export async function GET(req: Request) {
       });
 
       allRoles = await prisma.role.findMany({
-        select: { id: true, name: true, bgImageUrl: true },
+        select: { id: true, name: true, bgImageUrl: true, bgContrast: true },
         orderBy: { name: 'asc' },
       });
     }
 
     const effectiveBgImageUrl = user.role.bgImageUrl || user.bgImageUrl || null;
+    const effectiveBgContrast = user.role.bgContrast ?? user.bgContrast ?? 65;
 
     return NextResponse.json({
       profile: {
@@ -60,6 +61,7 @@ export async function GET(req: Request) {
         phone: user.phone || '+94 77 123 4567',
         avatarUrl: user.avatarUrl || '🌱',
         bgImageUrl: effectiveBgImageUrl,
+        bgContrast: effectiveBgContrast,
         roleBgImageUrl: user.role.bgImageUrl || null,
         userBgImageUrl: user.bgImageUrl || null,
         roleId: user.role.id,
@@ -85,7 +87,7 @@ export async function PATCH(req: Request) {
 
   try {
     const body = await req.json();
-    const { name, idNumber, phone, avatarUrl, bgImageUrl, targetUserId, targetRoleId } = body;
+    const { name, idNumber, phone, avatarUrl, bgImageUrl, bgContrast, targetUserId, targetRoleId } = body;
 
     // Check if updating another user or role (only allowed for Owner or IT)
     const currentUserRole = session.user.role.name;
@@ -111,19 +113,22 @@ export async function PATCH(req: Request) {
         ...(phone !== undefined && { phone }),
         ...(avatarUrl !== undefined && { avatarUrl }),
         ...(bgImageUrl !== undefined && { bgImageUrl: bgImageUrl || null }),
+        ...(bgContrast !== undefined && { bgContrast: Number(bgContrast) }),
       },
       include: { role: true },
     });
 
-    // 2. Update role-wise background for this role (or targeted role if Owner/IT)
-    if (bgImageUrl !== undefined) {
-      const roleIdToUpdate = (targetRoleId && isOwnerOrIT) ? targetRoleId : userBefore.roleId;
-      if (roleIdToUpdate) {
+    // 2. Update role-wise background & contrast for this role (or targeted role if Owner/IT)
+    const roleIdToUpdate = (targetRoleId && isOwnerOrIT) ? targetRoleId : userBefore.roleId;
+    if (roleIdToUpdate) {
+      const roleUpdateData: any = {};
+      if (bgImageUrl !== undefined) roleUpdateData.bgImageUrl = bgImageUrl || null;
+      if (bgContrast !== undefined) roleUpdateData.bgContrast = Number(bgContrast);
+
+      if (Object.keys(roleUpdateData).length > 0) {
         await prisma.role.update({
           where: { id: roleIdToUpdate },
-          data: {
-            bgImageUrl: bgImageUrl || null,
-          },
+          data: roleUpdateData,
         });
       }
     }
@@ -143,11 +148,13 @@ export async function PATCH(req: Request) {
         phone,
         avatarUrl,
         bgImageUrl: bgImageUrl ? 'custom_image_set' : 'cleared',
+        bgContrast,
         roleName: userBefore.role.name,
       },
     });
 
     const effectiveBg = reloadedRole?.bgImageUrl || updatedUser.bgImageUrl || null;
+    const effectiveContrast = reloadedRole?.bgContrast ?? updatedUser.bgContrast ?? 65;
 
     return NextResponse.json({
       profile: {
@@ -158,6 +165,7 @@ export async function PATCH(req: Request) {
         phone: updatedUser.phone,
         avatarUrl: updatedUser.avatarUrl,
         bgImageUrl: effectiveBg,
+        bgContrast: effectiveContrast,
         roleBgImageUrl: reloadedRole?.bgImageUrl || null,
         roleId: updatedUser.role.id,
         roleName: updatedUser.role.name,

@@ -10,6 +10,8 @@ interface ThemeContextType {
   toggleTheme: () => void;
   customBg: string | null;
   setCustomBg: (bg: string | null, targetRole?: string) => void;
+  bgContrast: number;
+  setBgContrast: (contrast: number, targetRole?: string) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -18,6 +20,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const [theme, setTheme] = useState<Theme>('dark');
   const [customBg, setCustomBgState] = useState<string | null>(null);
+  const [bgContrast, setBgContrastState] = useState<number>(65);
 
   const roleName = session?.user?.role?.name || '';
   const userId = session?.user?.id || '';
@@ -36,11 +39,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('flora_custom_bg');
   }, []);
 
-  // 2. Role-specific background loading & switching
+  // 2. Role-specific background and contrast loading & switching
   useEffect(() => {
     if (status === 'authenticated' && roleName) {
       const roleStorageKey = `flora_custom_bg_role_${roleName}`;
+      const contrastStorageKey = `flora_bg_contrast_role_${roleName}`;
+      
       const savedRoleBg = localStorage.getItem(roleStorageKey);
+      const savedContrast = localStorage.getItem(contrastStorageKey);
 
       if (savedRoleBg !== null) {
         setCustomBgState(savedRoleBg || null);
@@ -48,23 +54,36 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         setCustomBgState(null);
       }
 
-      // Fetch fresh role background from server profile API
+      if (savedContrast !== null) {
+        const parsed = parseInt(savedContrast, 10);
+        if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+          setBgContrastState(parsed);
+        }
+      }
+
+      // Fetch fresh role background & contrast from server profile API
       fetch('/api/profile')
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data?.profile) {
             const serverBg = data.profile.bgImageUrl || data.profile.roleBgImageUrl || null;
+            const serverContrast = data.profile.bgContrast ?? 65;
+            
             setCustomBgState(serverBg);
+            setBgContrastState(serverContrast);
+
             if (serverBg) {
               localStorage.setItem(roleStorageKey, serverBg);
             } else {
               localStorage.removeItem(roleStorageKey);
             }
+            localStorage.setItem(contrastStorageKey, String(serverContrast));
           }
         })
         .catch(() => {});
     } else if (status === 'unauthenticated') {
       setCustomBgState(null);
+      setBgContrastState(65);
     }
   }, [status, roleName, userId]);
 
@@ -105,8 +124,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [session]);
 
+  const setBgContrast = useCallback((contrast: number, targetRole?: string) => {
+    const clamped = Math.max(0, Math.min(100, Math.round(contrast)));
+    const currentRole = targetRole || session?.user?.role?.name || '';
+    setBgContrastState(clamped);
+    if (currentRole) {
+      const contrastStorageKey = `flora_bg_contrast_role_${currentRole}`;
+      localStorage.setItem(contrastStorageKey, String(clamped));
+    }
+  }, [session]);
+
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, customBg, setCustomBg }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, customBg, setCustomBg, bgContrast, setBgContrast }}>
       {children}
     </ThemeContext.Provider>
   );
@@ -121,6 +150,8 @@ export function useTheme() {
       toggleTheme: () => {},
       customBg: null as string | null,
       setCustomBg: () => {},
+      bgContrast: 65,
+      setBgContrast: () => {},
     };
   }
   return context;

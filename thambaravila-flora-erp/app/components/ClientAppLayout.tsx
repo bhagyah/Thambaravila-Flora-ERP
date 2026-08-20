@@ -10,7 +10,7 @@ import { useTheme } from '../context/ThemeContext';
 
 export default function ClientAppLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
-  const { theme, customBg } = useTheme();
+  const { theme, customBg, bgContrast } = useTheme();
   const pathname = usePathname();
 
   const isPublicPage = !pathname || pathname === '/' || pathname.startsWith('/auth');
@@ -25,6 +25,16 @@ export default function ClientAppLayout({ children }: { children: React.ReactNod
     );
   }
 
+  // Contrast calculations (0 to 100)
+  const contrastFactor = Math.max(0, Math.min(100, bgContrast ?? 65)) / 100;
+  const darkAlpha = (0.20 + contrastFactor * 0.70).toFixed(2);
+  const darkTopAlpha = (0.30 + contrastFactor * 0.65).toFixed(2);
+  const darkBotAlpha = (0.35 + contrastFactor * 0.60).toFixed(2);
+
+  const lightAlpha = (0.30 + contrastFactor * 0.62).toFixed(2);
+  const lightTopAlpha = (0.40 + contrastFactor * 0.55).toFixed(2);
+  const lightBotAlpha = (0.35 + contrastFactor * 0.58).toFixed(2);
+
   return (
     <div className="app-shell dashboard-shell relative flex min-h-screen overflow-x-hidden bg-transparent">
       <TwoFactorSetupPrompt />
@@ -38,11 +48,23 @@ export default function ClientAppLayout({ children }: { children: React.ReactNod
             backgroundImage: `url("${customBg}")`,
           }}
         >
-          {/* Theme-Adaptive Overlays to guarantee 100% text clarity and card contrast */}
+          {/* Theme-Adaptive & User-Contrast Adjustable Overlays */}
           {theme === 'light' ? (
-            <div className="absolute inset-0 bg-white/75 backdrop-blur-[2px] bg-gradient-to-b from-white/85 via-white/60 to-white/80" />
+            <div
+              className="absolute inset-0 backdrop-blur-[2px] transition-all duration-300"
+              style={{
+                backgroundColor: `rgba(255, 255, 255, ${lightAlpha})`,
+                backgroundImage: `linear-gradient(180deg, rgba(255, 255, 255, ${lightTopAlpha}) 0%, rgba(243, 248, 245, ${lightAlpha}) 50%, rgba(255, 255, 255, ${lightBotAlpha}) 100%)`,
+              }}
+            />
           ) : (
-            <div className="absolute inset-0 bg-slate-950/65 backdrop-blur-[1px] bg-gradient-to-b from-slate-950/75 via-slate-950/50 to-slate-950/80" />
+            <div
+              className="absolute inset-0 backdrop-blur-[1px] transition-all duration-300"
+              style={{
+                backgroundColor: `rgba(2, 6, 23, ${darkAlpha})`,
+                backgroundImage: `linear-gradient(180deg, rgba(2, 6, 23, ${darkTopAlpha}) 0%, rgba(23, 28, 26, ${darkAlpha}) 50%, rgba(2, 6, 23, ${darkBotAlpha}) 100%)`,
+              }}
+            />
           )}
         </div>
       ) : (

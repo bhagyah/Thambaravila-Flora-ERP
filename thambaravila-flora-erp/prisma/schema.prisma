@@ -32,6 +32,7 @@ model User {
   phone                      String?
   avatarUrl                  String?   @map("avatar_url")
   bgImageUrl                 String?   @map("bg_image_url")
+  bgContrast                 Int?      @default(65) @map("bg_contrast")
   lastLogin                  DateTime? @map("last_login")
   failedAttempts             Int       @default(0) @map("failed_attempts") // For rate limiting
   lockedUntil                DateTime? @map("locked_until") // Account lockout
@@ -68,6 +69,7 @@ model Role {
   name        String   @unique
   description String?
   bgImageUrl  String?  @map("bg_image_url")
+  bgContrast  Int?     @default(65) @map("bg_contrast")
   isSystem    Boolean  @default(false) @map("is_system") // System roles (Owner, IT) cannot be deleted
   canBeEdited Boolean  @default(true) @map("can_be_edited") // Owner role cannot be edited
   createdAt   DateTime @default(now()) @map("created_at")

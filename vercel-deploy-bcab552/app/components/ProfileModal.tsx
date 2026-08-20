@@ -49,7 +49,7 @@ const PRESET_WALLPAPERS = [
 
 export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const { data: session } = useSession();
-  const { theme, customBg, setCustomBg } = useTheme();
+  const { theme, customBg, setCustomBg, bgContrast, setBgContrast } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -62,13 +62,15 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     phone: '',
     avatarUrl: '🌱',
     bgImageUrl: null,
+    bgContrast: 65,
     roleName: '',
   });
 
-  // Background Customization State
+  // Background & Contrast Customization State
   const [allRoles, setAllRoles] = useState<any[]>([]);
   const [selectedTargetRoleId, setSelectedTargetRoleId] = useState<string>('');
   const [customBgPreview, setCustomBgPreview] = useState<string | null>(null);
+  const [contrastPreview, setContrastPreview] = useState<number>(65);
   const [previewMode, setPreviewMode] = useState<'dark' | 'light'>('dark');
 
   // Team members list for Owner / IT Admin
@@ -104,6 +106,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         setProfile(data.profile);
         setSelectedTargetRoleId(data.profile.roleId || '');
         setCustomBgPreview(data.profile.bgImageUrl || data.profile.roleBgImageUrl || customBg || null);
+        setContrastPreview(data.profile.bgContrast ?? bgContrast ?? 65);
         setTeamMembers(data.teamMembers || []);
         setAllRoles(data.allRoles || []);
       }
@@ -153,7 +156,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           ctx.drawImage(img, 0, 0, width, height);
           const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
           setCustomBgPreview(optimizedDataUrl);
-          setMsg('📷 Image loaded! Click "Apply & Save Role Background" to set it.');
+          setMsg('📷 Image loaded! Adjust contrast below and click "Apply & Save".');
         }
       };
       img.src = rawDataUrl;
@@ -174,19 +177,25 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bgImageUrl: customBgPreview || '',
+          bgContrast: contrastPreview,
           targetRoleId: selectedTargetRoleId || profile.roleId,
         }),
       });
 
       if (res.ok) {
         setCustomBg(customBgPreview || null, targetRoleName);
+        setBgContrast(contrastPreview, targetRoleName);
         setAllRoles((prev) =>
-          prev.map((r) => (r.id === selectedTargetRoleId ? { ...r, bgImageUrl: customBgPreview || null } : r))
+          prev.map((r) =>
+            r.id === selectedTargetRoleId
+              ? { ...r, bgImageUrl: customBgPreview || null, bgContrast: contrastPreview }
+              : r
+          )
         );
-        setMsg(`✓ ${targetRoleName} background updated successfully! Other roles remain unchanged.`);
+        setMsg(`✓ ${targetRoleName} wallpaper & contrast (${contrastPreview}%) updated successfully!`);
         setTimeout(() => setMsg(''), 4000);
       } else {
-        setMsg('❌ Failed to update background image');
+        setMsg('❌ Failed to update background settings');
       }
     } catch {
       setMsg('❌ Error saving background');
@@ -208,17 +217,20 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bgImageUrl: '',
+          bgContrast: 65,
           targetRoleId: selectedTargetRoleId || profile.roleId,
         }),
       });
 
       if (res.ok) {
         setCustomBgPreview(null);
+        setContrastPreview(65);
         setCustomBg(null, targetRoleName);
+        setBgContrast(65, targetRoleName);
         setAllRoles((prev) =>
-          prev.map((r) => (r.id === selectedTargetRoleId ? { ...r, bgImageUrl: null } : r))
+          prev.map((r) => (r.id === selectedTargetRoleId ? { ...r, bgImageUrl: null, bgContrast: 65 } : r))
         );
-        setMsg(`✓ Restored default background for ${targetRoleName}!`);
+        setMsg(`✓ Restored default background and contrast for ${targetRoleName}!`);
         setTimeout(() => setMsg(''), 4000);
       } else {
         setMsg('❌ Failed to reset background');
@@ -429,6 +441,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                         setSelectedTargetRoleId(newRoleId);
                         const matched = allRoles.find((r) => r.id === newRoleId);
                         setCustomBgPreview(matched?.bgImageUrl || null);
+                        setContrastPreview(matched?.bgContrast ?? 65);
                       }}
                       className="px-3 py-1.5 bg-flora-dark border border-flora-border rounded-xl text-xs font-bold text-flora-sage focus:outline-none focus:border-flora-sage shadow"
                     >
@@ -480,54 +493,144 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 </div>
 
                 {/* Simulated App Frame */}
-                <div
-                  className="relative h-44 rounded-xl border border-flora-border overflow-hidden bg-cover bg-center shadow-inner flex flex-col justify-between p-3.5 transition-all"
-                  style={{
-                    backgroundImage: customBgPreview ? `url("${customBgPreview}")` : 'url("/dashboard-floral-bg.png")',
-                  }}
-                >
-                  {/* Adaptive Overlay Simulation */}
-                  {previewMode === 'light' ? (
-                    <div className="absolute inset-0 bg-white/75 backdrop-blur-[2px] bg-gradient-to-b from-white/85 via-white/60 to-white/80 pointer-events-none" />
-                  ) : (
-                    <div className="absolute inset-0 bg-slate-950/65 backdrop-blur-[1px] bg-gradient-to-b from-slate-950/75 via-slate-950/50 to-slate-950/80 pointer-events-none" />
-                  )}
+                {(() => {
+                  const previewFactor = Math.max(0, Math.min(100, contrastPreview)) / 100;
+                  const pDarkAlpha = (0.20 + previewFactor * 0.70).toFixed(2);
+                  const pDarkTopAlpha = (0.30 + previewFactor * 0.65).toFixed(2);
+                  const pDarkBotAlpha = (0.35 + previewFactor * 0.60).toFixed(2);
 
-                  {/* Sample Mockup ERP Cards */}
-                  <div className="relative z-10 flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-6 h-6 rounded-lg bg-emerald-500/30 border border-emerald-400/50 flex items-center justify-center text-xs">
-                        🌸
+                  const pLightAlpha = (0.30 + previewFactor * 0.62).toFixed(2);
+                  const pLightTopAlpha = (0.40 + previewFactor * 0.55).toFixed(2);
+                  const pLightBotAlpha = (0.35 + previewFactor * 0.58).toFixed(2);
+
+                  return (
+                    <div
+                      className="relative h-44 rounded-xl border border-flora-border overflow-hidden bg-cover bg-center shadow-inner flex flex-col justify-between p-3.5 transition-all"
+                      style={{
+                        backgroundImage: customBgPreview ? `url("${customBgPreview}")` : 'url("/dashboard-floral-bg.png")',
+                      }}
+                    >
+                      {/* Dynamic Contrast Adaptive Overlay Simulation */}
+                      {previewMode === 'light' ? (
+                        <div
+                          className="absolute inset-0 backdrop-blur-[2px] pointer-events-none transition-all duration-200"
+                          style={{
+                            backgroundColor: `rgba(255, 255, 255, ${pLightAlpha})`,
+                            backgroundImage: `linear-gradient(180deg, rgba(255, 255, 255, ${pLightTopAlpha}) 0%, rgba(243, 248, 245, ${pLightAlpha}) 50%, rgba(255, 255, 255, ${pLightBotAlpha}) 100%)`,
+                          }}
+                        />
+                      ) : (
+                        <div
+                          className="absolute inset-0 backdrop-blur-[1px] pointer-events-none transition-all duration-200"
+                          style={{
+                            backgroundColor: `rgba(2, 6, 23, ${pDarkAlpha})`,
+                            backgroundImage: `linear-gradient(180deg, rgba(2, 6, 23, ${pDarkTopAlpha}) 0%, rgba(23, 28, 26, ${pDarkAlpha}) 50%, rgba(2, 6, 23, ${pDarkBotAlpha}) 100%)`,
+                          }}
+                        />
+                      )}
+
+                      {/* Sample Mockup ERP Cards */}
+                      <div className="relative z-10 flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-6 h-6 rounded-lg bg-emerald-500/30 border border-emerald-400/50 flex items-center justify-center text-xs">
+                            🌸
+                          </div>
+                          <span className={`text-xs font-black tracking-wider ${previewMode === 'light' ? 'text-slate-900' : 'text-white'}`}>
+                            THAMBARAVILA ERP
+                          </span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
+                          Contrast: {contrastPreview}%
+                        </span>
                       </div>
-                      <span className={`text-xs font-black tracking-wider ${previewMode === 'light' ? 'text-slate-900' : 'text-white'}`}>
-                        THAMBARAVILA ERP
+
+                      <div className="relative z-10 grid grid-cols-2 gap-2">
+                        <div className={`p-2.5 rounded-xl border backdrop-blur-sm shadow ${
+                          previewMode === 'light'
+                            ? 'bg-white/95 border-slate-300 text-slate-900'
+                            : 'bg-slate-900/90 border-flora-border text-slate-100'
+                        }`}>
+                          <div className="text-[9px] uppercase font-bold text-slate-400">Total Bookings</div>
+                          <div className="text-sm font-black text-flora-sage">24 Events</div>
+                        </div>
+                        <div className={`p-2.5 rounded-xl border backdrop-blur-sm shadow ${
+                          previewMode === 'light'
+                            ? 'bg-white/95 border-slate-300 text-slate-900'
+                            : 'bg-slate-900/90 border-flora-border text-slate-100'
+                        }`}>
+                          <div className="text-[9px] uppercase font-bold text-slate-400">Active Role</div>
+                          <div className="text-sm font-black text-amber-400">
+                            {allRoles.find((r) => r.id === selectedTargetRoleId)?.name || profile.roleName || 'Staff'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* ── Contrast & Dimming Controls ── */}
+              <div className="bg-flora-darker border border-flora-border rounded-2xl p-4 space-y-3.5 shadow-inner">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">🎚️</span>
+                    <div>
+                      <span className="font-bold text-slate-100 text-xs">
+                        Adjust Background Contrast &amp; Dimming
                       </span>
+                      <p className="text-[10px] text-slate-400">
+                        Higher contrast dims the wallpaper for maximum card &amp; text clarity.
+                      </p>
                     </div>
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
-                      Live Preview
-                    </span>
                   </div>
+                  <span className="px-2.5 py-1 rounded-xl text-xs font-black bg-flora-dark border border-flora-border text-flora-sage font-mono shadow">
+                    {contrastPreview}%
+                  </span>
+                </div>
 
-                  <div className="relative z-10 grid grid-cols-2 gap-2">
-                    <div className={`p-2.5 rounded-xl border backdrop-blur-sm shadow ${
-                      previewMode === 'light'
-                        ? 'bg-white/95 border-slate-300 text-slate-900'
-                        : 'bg-slate-900/90 border-flora-border text-slate-100'
-                    }`}>
-                      <div className="text-[9px] uppercase font-bold text-slate-400">Total Bookings</div>
-                      <div className="text-sm font-black text-flora-sage">24 Events</div>
-                    </div>
-                    <div className={`p-2.5 rounded-xl border backdrop-blur-sm shadow ${
-                      previewMode === 'light'
-                        ? 'bg-white/95 border-slate-300 text-slate-900'
-                        : 'bg-slate-900/90 border-flora-border text-slate-100'
-                    }`}>
-                      <div className="text-[9px] uppercase font-bold text-slate-400">Active Role</div>
-                      <div className="text-sm font-black text-amber-400">
-                        {allRoles.find((r) => r.id === selectedTargetRoleId)?.name || profile.roleName || 'Staff'}
-                      </div>
-                    </div>
+                {/* Range Slider */}
+                <div className="space-y-1">
+                  <input
+                    type="range"
+                    min="15"
+                    max="95"
+                    step="1"
+                    value={contrastPreview}
+                    onChange={(e) => setContrastPreview(Number(e.target.value))}
+                    className="w-full h-2 bg-slate-900 rounded-lg appearance-none cursor-pointer accent-flora-sage focus:outline-none"
+                  />
+                  <div className="flex justify-between text-[9px] text-slate-400 font-bold px-0.5">
+                    <span>Vibrant (15%)</span>
+                    <span>Balanced (65%)</span>
+                    <span>High Clarity (95%)</span>
                   </div>
+                </div>
+
+                {/* Quick Contrast Presets */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                  {[
+                    { label: '🌤️ Soft / Subtle', val: 35, desc: 'Lighter overlay' },
+                    { label: '⚖️ Balanced', val: 65, desc: 'Recommended' },
+                    { label: '🌙 High Contrast', val: 80, desc: 'Darker cards' },
+                    { label: '⬛ Max Clarity', val: 92, desc: 'Crisp text' },
+                  ].map((preset) => {
+                    const isCurrent = contrastPreview === preset.val;
+                    return (
+                      <button
+                        type="button"
+                        key={preset.val}
+                        onClick={() => setContrastPreview(preset.val)}
+                        className={`p-2 rounded-xl border text-center transition ${
+                          isCurrent
+                            ? 'bg-flora-sage/20 border-flora-sage text-flora-sage font-black shadow-sm ring-1 ring-flora-sage/50'
+                            : 'bg-flora-dark border-flora-border text-slate-300 hover:border-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <div className="text-[11px] font-bold truncate">{preset.label}</div>
+                        <div className="text-[9px] text-slate-500">{preset.val}%</div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
