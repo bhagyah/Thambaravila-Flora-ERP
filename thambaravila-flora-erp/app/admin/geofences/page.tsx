@@ -84,7 +84,7 @@ export default function GeofencesAdminPage() {
   }
 
   function openCreateModal() {
-    setModal({ open: true, editingFence: null, name: '', lat: null, lng: null, radius: 100, step: 'form' });
+    setModal({ open: true, editingFence: null, name: '', lat: 6.9271, lng: 79.8612, radius: 100, step: 'form' });
   }
 
   function openEditModal(fence: Geofence) {
@@ -319,6 +319,9 @@ export default function GeofencesAdminPage() {
                       : undefined
                   }
                   initialRadius={modal.radius}
+                  onChange={(center, radius) => {
+                    setModal((m) => ({ ...m, lat: center.lat, lng: center.lng, radius }));
+                  }}
                   onConfirm={(center, radius) => {
                     setModal((m) => ({ ...m, lat: center.lat, lng: center.lng, radius }));
                   }}
