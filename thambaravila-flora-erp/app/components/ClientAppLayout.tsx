@@ -53,8 +53,8 @@ export default function ClientAppLayout({ children }: { children: React.ReactNod
             <div
               className="absolute inset-0 backdrop-blur-[2px] transition-all duration-300"
               style={{
-                backgroundColor: `rgba(255, 255, 255, ${lightAlpha})`,
-                backgroundImage: `linear-gradient(180deg, rgba(255, 255, 255, ${lightTopAlpha}) 0%, rgba(243, 248, 245, ${lightAlpha}) 50%, rgba(255, 255, 255, ${lightBotAlpha}) 100%)`,
+                backgroundColor: `rgba(244, 246, 242, ${lightAlpha})`,
+                backgroundImage: `linear-gradient(180deg, rgba(248, 249, 246, ${lightTopAlpha}) 0%, rgba(239, 243, 238, ${lightAlpha}) 50%, rgba(245, 247, 243, ${lightBotAlpha}) 100%)`,
               }}
             />
           ) : (

@@ -91,14 +91,14 @@ export default function AreaTrendChart({
   const yTicks = [maxVal, maxVal * 0.66, maxVal * 0.33, 0];
 
   const shell = isLight
-    ? 'border-slate-200/90 bg-white/90 text-slate-900 shadow-[0_18px_40px_rgba(34,40,38,0.08)]'
+    ? 'border-[#DCE4DF] bg-[#FAFBF8] text-[#18221D] shadow-[0_12px_32px_rgba(35,48,41,0.06)]'
     : 'border-white/10 bg-[#171c1a]/78 text-white shadow-[0_18px_40px_rgba(0,0,0,0.22)]';
-  const titleClass = isLight ? 'text-slate-900' : 'text-white';
-  const subtitleClass = isLight ? 'text-slate-600' : 'text-slate-400';
-  const axisColor = isLight ? '#64748b' : '#94a3b8';
-  const gridColor = isLight ? '#cbd5e1' : '#334155';
+  const titleClass = isLight ? 'text-[#18221D]' : 'text-white';
+  const subtitleClass = isLight ? 'text-[#4A5B52]' : 'text-slate-400';
+  const axisColor = isLight ? '#4A5B52' : '#94a3b8';
+  const gridColor = isLight ? '#D2DBD4' : '#334155';
   const tooltipShell = isLight
-    ? 'bg-white/96 border-slate-200 text-slate-900 shadow-[0_18px_40px_rgba(34,40,38,0.12)]'
+    ? 'bg-[#FAFBF8] border-[#DCE4DF] text-[#18221D] shadow-[0_12px_32px_rgba(35,48,41,0.1)]'
     : 'bg-slate-950/95 border-teal-500/40 text-white shadow-2xl';
 
   return (
