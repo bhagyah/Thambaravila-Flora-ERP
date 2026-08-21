@@ -400,7 +400,9 @@ export default function Sidebar() {
 
                   {(salesOpen || isActive('/sales')) && (
                     <div className={`mt-1 space-y-1 border-l pl-3 my-1 ${isLight ? 'border-[#DDD8D3]' : 'border-white/10'}`}>
+                      <SidebarSubItem href="/sales/tracker" label="30-Day Wedding Tracker" active={isActive('/sales/tracker')} isLight={isLight} onClick={() => setMobileOpen(false)} />
                       <SidebarSubItem href="/sales/analytics" label="Pattern Analytics" active={isActive('/sales/analytics')} isLight={isLight} onClick={() => setMobileOpen(false)} />
+                      <SidebarSubItem href="/sales/targets" label="Sales Quota & Targets" active={isActive('/sales/targets')} isLight={isLight} onClick={() => setMobileOpen(false)} />
                     </div>
                   )}
                 </div>

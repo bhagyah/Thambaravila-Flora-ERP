@@ -53,19 +53,40 @@ export default function SalesAnalyticsPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 lg:p-8 space-y-8">
       <div className="max-w-7xl mx-auto space-y-8">
-        <div>
-          <div className="flex items-center space-x-2">
-            <span className="px-2.5 py-0.5 bg-teal-500/20 text-teal-300 font-extrabold text-xs rounded border border-teal-500/30">
-              SALES INTELLIGENCE
-            </span>
-            <span className="text-xs text-slate-400 font-mono">Two-Pipeline Pattern Analytics</span>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="px-2.5 py-0.5 bg-teal-500/20 text-teal-300 font-extrabold text-xs rounded border border-teal-500/30">
+                SALES INTELLIGENCE
+              </span>
+              <span className="text-xs text-slate-400 font-mono">Two-Pipeline Pattern Analytics</span>
+            </div>
+            <h1 className="text-3xl font-black text-slate-100 tracking-tight mt-1">
+              Sales Pattern &amp; Channel Statistics
+            </h1>
+            <p className="text-slate-400 text-sm mt-1">
+              Rule-based analytical insight into lead conversion efficiency, acquisition channels, and seasonal forecasting.
+            </p>
           </div>
-          <h1 className="text-3xl font-black text-slate-100 tracking-tight mt-1">
-            Sales Pattern &amp; Channel Statistics
-          </h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Rule-based analytical insight into lead conversion efficiency, acquisition channels, and seasonal forecasting.
-          </p>
+
+          <div className="flex items-center gap-3">
+            <a
+              href="/sales/tracker"
+              className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-semibold text-xs rounded-xl shadow transition"
+            >
+              View 30-Day Tracker
+            </a>
+            <a
+              href="/api/sales/tracker/export"
+              download
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-900/30 transition border border-emerald-400/30"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span>Download 30-Day Excel</span>
+            </a>
+          </div>
         </div>
 
         {/* Seasonality Warning Alert Banner */}
