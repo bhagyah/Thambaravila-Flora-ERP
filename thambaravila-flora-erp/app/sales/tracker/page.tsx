@@ -183,142 +183,168 @@ export default function SalesTrackerPage() {
           </button>
         </div>
 
-        {/* 6 KPI Cards matching Sheet 1 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5 sm:gap-4">
+        {/* 6 KPI Cards in 3x2 Grid for Perfect Proportions and Readability */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {/* Card 1: Total Weddings */}
-          <div className="bg-slate-900/90 border border-slate-800/90 hover:border-slate-700/80 rounded-2xl p-4 sm:p-4.5 shadow-lg backdrop-blur-xl transition-all duration-200 flex flex-col justify-between min-w-0 group">
-            <div className="flex items-center justify-between gap-2 min-w-0">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
-                Total Weddings
-              </span>
-              <span className="text-sm shrink-0 p-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+          <div className="relative overflow-hidden bg-gradient-to-br from-slate-900/90 via-slate-900/60 to-slate-950/90 border border-slate-800/90 hover:border-emerald-500/40 rounded-2xl p-5 shadow-xl backdrop-blur-xl transition-all duration-300 flex flex-col justify-between group min-w-0">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400/90 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
+                  Pipeline
+                </span>
+                <h3 className="text-sm font-bold text-slate-300 mt-2 truncate">Total Weddings</h3>
+              </div>
+              <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-xl shrink-0 text-emerald-300 shadow-inner group-hover:scale-110 transition-transform">
                 💍
-              </span>
+              </div>
             </div>
-            <div className="mt-2 min-w-0">
-              <div className="text-xl sm:text-2xl font-black text-slate-100 tracking-tight truncate" title={String(totalWeddings)}>
+            <div className="mt-4">
+              <div className="text-3xl sm:text-4xl font-black text-slate-100 tracking-tight">
                 {totalWeddings}
               </div>
-              <div className="text-[11px] text-emerald-400 mt-1 font-medium truncate flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
-                <span className="truncate">Next 30-day pipeline</span>
+              <div className="text-xs text-emerald-400 mt-1.5 font-medium flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Next 30-day wedding pipeline</span>
               </div>
             </div>
           </div>
 
           {/* Card 2: Total Package Value */}
-          <div className="bg-slate-900/90 border border-slate-800/90 hover:border-slate-700/80 rounded-2xl p-4 sm:p-4.5 shadow-lg backdrop-blur-xl transition-all duration-200 flex flex-col justify-between min-w-0 group">
-            <div className="flex items-center justify-between gap-2 min-w-0">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
-                Total Package Value
-              </span>
-              <span className="text-sm shrink-0 p-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+          <div className="relative overflow-hidden bg-gradient-to-br from-slate-900/90 via-slate-900/60 to-slate-950/90 border border-slate-800/90 hover:border-cyan-500/40 rounded-2xl p-5 shadow-xl backdrop-blur-xl transition-all duration-300 flex flex-col justify-between group min-w-0">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <span className="text-[11px] font-black uppercase tracking-wider text-cyan-400/90 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-md">
+                  Revenue
+                </span>
+                <h3 className="text-sm font-bold text-slate-300 mt-2 truncate">Total Package Value</h3>
+              </div>
+              <div className="w-11 h-11 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-xl shrink-0 text-cyan-300 shadow-inner group-hover:scale-110 transition-transform">
                 💼
-              </span>
+              </div>
             </div>
-            <div className="mt-2 min-w-0">
-              <div className="text-lg sm:text-xl xl:text-lg 2xl:text-xl font-black text-cyan-400 tracking-tight truncate" title={formatLKR(totalPackageValue)}>
+            <div className="mt-4 min-w-0">
+              <div className="text-2xl sm:text-3xl font-black text-cyan-400 tracking-tight truncate font-mono" title={formatLKR(totalPackageValue)}>
                 {formatLKR(totalPackageValue)}
               </div>
-              <div className="text-[11px] text-slate-400 mt-1 font-medium truncate flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></span>
-                <span className="truncate">Contract value</span>
+              <div className="text-xs text-slate-400 mt-1.5 font-medium flex items-center gap-1.5 truncate">
+                <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
+                <span className="truncate">Total contract booking value</span>
               </div>
             </div>
           </div>
 
           {/* Card 3: Advance Received */}
-          <div className="bg-slate-900/90 border border-slate-800/90 hover:border-slate-700/80 rounded-2xl p-4 sm:p-4.5 shadow-lg backdrop-blur-xl transition-all duration-200 flex flex-col justify-between min-w-0 group">
-            <div className="flex items-center justify-between gap-2 min-w-0">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
-                Advance Received
-              </span>
-              <span className="text-sm shrink-0 p-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+          <div className="relative overflow-hidden bg-gradient-to-br from-slate-900/90 via-slate-900/60 to-slate-950/90 border border-slate-800/90 hover:border-emerald-500/40 rounded-2xl p-5 shadow-xl backdrop-blur-xl transition-all duration-300 flex flex-col justify-between group min-w-0">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400/90 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
+                  Collected
+                </span>
+                <h3 className="text-sm font-bold text-slate-300 mt-2 truncate">Advance Received</h3>
+              </div>
+              <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-xl shrink-0 text-emerald-300 shadow-inner group-hover:scale-110 transition-transform">
                 💰
-              </span>
+              </div>
             </div>
-            <div className="mt-2 min-w-0">
-              <div className="text-lg sm:text-xl xl:text-lg 2xl:text-xl font-black text-emerald-400 tracking-tight truncate" title={formatLKR(totalAdvanceReceived)}>
+            <div className="mt-4 min-w-0">
+              <div className="text-2xl sm:text-3xl font-black text-emerald-400 tracking-tight truncate font-mono" title={formatLKR(totalAdvanceReceived)}>
                 {formatLKR(totalAdvanceReceived)}
               </div>
-              <div className="text-[11px] text-emerald-400/90 mt-1 font-medium truncate flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
-                <span className="truncate">Deposits collected</span>
+              <div className="text-xs text-emerald-400/90 mt-1.5 font-medium flex items-center gap-1.5 truncate">
+                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span className="truncate">Deposits collected into accounts</span>
               </div>
             </div>
           </div>
 
           {/* Card 4: Balance Pending */}
-          <div className="bg-slate-900/90 border border-slate-800/90 hover:border-slate-700/80 rounded-2xl p-4 sm:p-4.5 shadow-lg backdrop-blur-xl transition-all duration-200 flex flex-col justify-between min-w-0 group">
-            <div className="flex items-center justify-between gap-2 min-w-0">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
-                Balance Pending
-              </span>
-              <span className="text-sm shrink-0 p-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
+          <div className="relative overflow-hidden bg-gradient-to-br from-slate-900/90 via-slate-900/60 to-slate-950/90 border border-slate-800/90 hover:border-amber-500/40 rounded-2xl p-5 shadow-xl backdrop-blur-xl transition-all duration-300 flex flex-col justify-between group min-w-0">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <span className="text-[11px] font-black uppercase tracking-wider text-amber-400/90 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">
+                  Receivables
+                </span>
+                <h3 className="text-sm font-bold text-slate-300 mt-2 truncate">Balance Pending</h3>
+              </div>
+              <div className="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-xl shrink-0 text-amber-300 shadow-inner group-hover:scale-110 transition-transform">
                 ⏳
-              </span>
+              </div>
             </div>
-            <div className="mt-2 min-w-0">
-              <div className="text-lg sm:text-xl xl:text-lg 2xl:text-xl font-black text-amber-400 tracking-tight truncate" title={formatLKR(totalBalancePending)}>
+            <div className="mt-4 min-w-0">
+              <div className="text-2xl sm:text-3xl font-black text-amber-400 tracking-tight truncate font-mono" title={formatLKR(totalBalancePending)}>
                 {formatLKR(totalBalancePending)}
               </div>
-              <div className="text-[11px] text-amber-400/90 mt-1 font-medium truncate flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
-                <span className="truncate">To collect before event</span>
+              <div className="text-xs text-amber-400/90 mt-1.5 font-medium flex items-center gap-1.5 truncate">
+                <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                <span className="truncate">To collect before event setup</span>
               </div>
             </div>
           </div>
 
           {/* Card 5: Pending / Overdue */}
-          <div className="bg-slate-900/90 border border-slate-800/90 hover:border-slate-700/80 rounded-2xl p-4 sm:p-4.5 shadow-lg backdrop-blur-xl transition-all duration-200 flex flex-col justify-between min-w-0 group">
-            <div className="flex items-center justify-between gap-2 min-w-0">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
-                Pending / Overdue
-              </span>
-              <span className={`text-sm shrink-0 p-1 rounded-lg border ${
+          <div className="relative overflow-hidden bg-gradient-to-br from-slate-900/90 via-slate-900/60 to-slate-950/90 border border-slate-800/90 hover:border-rose-500/40 rounded-2xl p-5 shadow-xl backdrop-blur-xl transition-all duration-300 flex flex-col justify-between group min-w-0">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <span className={`text-[11px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                  pendingOverdueCount > 0
+                    ? 'text-rose-400 bg-rose-500/10 border border-rose-500/20'
+                    : 'text-slate-400 bg-slate-800/60 border border-slate-700/50'
+                }`}>
+                  Action Required
+                </span>
+                <h3 className="text-sm font-bold text-slate-300 mt-2 truncate">Pending / Overdue</h3>
+              </div>
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-inner group-hover:scale-110 transition-transform ${
                 pendingOverdueCount > 0
-                  ? 'bg-rose-500/10 border-rose-500/20 text-rose-400'
-                  : 'bg-slate-800/60 border-slate-700/50 text-slate-400'
+                  ? 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
+                  : 'bg-slate-800/60 border border-slate-700/50 text-slate-400'
               }`}>
                 ⚠️
-              </span>
+              </div>
             </div>
-            <div className="mt-2 min-w-0">
-              <div className={`text-xl sm:text-2xl font-black tracking-tight truncate ${
+            <div className="mt-4">
+              <div className={`text-3xl sm:text-4xl font-black tracking-tight ${
                 pendingOverdueCount > 0 ? 'text-rose-400' : 'text-slate-100'
-              }`} title={String(pendingOverdueCount)}>
+              }`}>
                 {pendingOverdueCount}
               </div>
-              <div className="text-[11px] text-slate-400 mt-1 font-medium truncate flex items-center gap-1.5">
-                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${pendingOverdueCount > 0 ? 'bg-rose-400' : 'bg-slate-500'}`}></span>
-                <span className="truncate">Requires follow-up</span>
+              <div className="text-xs text-slate-400 mt-1.5 font-medium flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full ${pendingOverdueCount > 0 ? 'bg-rose-400 animate-pulse' : 'bg-slate-500'}`}></span>
+                <span>Requires immediate client follow-up</span>
               </div>
             </div>
           </div>
 
           {/* Card 6: Job Sheets Missing */}
-          <div className="bg-slate-900/90 border border-slate-800/90 hover:border-slate-700/80 rounded-2xl p-4 sm:p-4.5 shadow-lg backdrop-blur-xl transition-all duration-200 flex flex-col justify-between min-w-0 group">
-            <div className="flex items-center justify-between gap-2 min-w-0">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
-                Job Sheets Missing
-              </span>
-              <span className={`text-sm shrink-0 p-1 rounded-lg border ${
+          <div className="relative overflow-hidden bg-gradient-to-br from-slate-900/90 via-slate-900/60 to-slate-950/90 border border-slate-800/90 hover:border-amber-500/40 rounded-2xl p-5 shadow-xl backdrop-blur-xl transition-all duration-300 flex flex-col justify-between group min-w-0">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <span className={`text-[11px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                  jobSheetsNotCompleted > 0
+                    ? 'text-amber-400 bg-amber-500/10 border border-amber-500/20'
+                    : 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20'
+                }`}>
+                  Production
+                </span>
+                <h3 className="text-sm font-bold text-slate-300 mt-2 truncate">Job Sheets Status</h3>
+              </div>
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-inner group-hover:scale-110 transition-transform ${
                 jobSheetsNotCompleted > 0
-                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                  : 'bg-slate-800/60 border-slate-700/50 text-slate-400'
+                  ? 'bg-amber-500/10 border border-amber-500/30 text-amber-300'
+                  : 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
               }`}>
                 📋
-              </span>
+              </div>
             </div>
-            <div className="mt-2 min-w-0">
-              <div className={`text-xl sm:text-2xl font-black tracking-tight truncate ${
-                jobSheetsNotCompleted > 0 ? 'text-amber-400' : 'text-slate-100'
-              }`} title={String(jobSheetsNotCompleted)}>
+            <div className="mt-4">
+              <div className={`text-3xl sm:text-4xl font-black tracking-tight ${
+                jobSheetsNotCompleted > 0 ? 'text-amber-400' : 'text-emerald-400'
+              }`}>
                 {jobSheetsNotCompleted}
               </div>
-              <div className="text-[11px] text-slate-400 mt-1 font-medium truncate flex items-center gap-1.5">
-                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${jobSheetsNotCompleted > 0 ? 'bg-amber-400' : 'bg-slate-500'}`}></span>
-                <span className="truncate">Production pending</span>
+              <div className="text-xs text-slate-400 mt-1.5 font-medium flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full ${jobSheetsNotCompleted > 0 ? 'bg-amber-400' : 'bg-emerald-400'}`}></span>
+                <span>{jobSheetsNotCompleted === 0 ? 'All job sheets completed' : 'Production job sheets missing'}</span>
               </div>
             </div>
           </div>
