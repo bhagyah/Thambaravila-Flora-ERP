@@ -76,11 +76,11 @@ export default function MetricSparkCard({
         href ? 'cursor-pointer' : '',
       ].join(' ')}
     >
-      <div className="flex items-center justify-between">
-        <span className={`text-xs uppercase font-bold tracking-wider ${isLight ? 'text-[#5A625D]' : 'text-slate-300'}`}>{label}</span>
+      <div className="flex items-center justify-between gap-2 min-w-0">
+        <span className={`text-xs uppercase font-bold tracking-wider truncate min-w-0 ${isLight ? 'text-[#5A625D]' : 'text-slate-300'}`} title={label}>{label}</span>
         <div
           className={[
-            'flex h-8 w-8 items-center justify-center rounded-xl border text-sm shadow-inner',
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border text-sm shadow-inner',
             isLight ? 'border-[#DDD8D3] bg-[#E5E2DF] text-[#2C3B34]' : 'border-white/10 bg-white/[0.06] text-white',
           ].join(' ')}
         >
@@ -88,12 +88,12 @@ export default function MetricSparkCard({
         </div>
       </div>
 
-      <div className="flex items-baseline justify-between">
-        <div className={`text-2xl font-black ${isLight ? 'text-[#1E2421]' : 'text-white'}`}>{value}</div>
+      <div className="flex items-baseline justify-between gap-2 min-w-0 mt-1">
+        <div className={`text-xl sm:text-2xl font-black truncate min-w-0 ${isLight ? 'text-[#1E2421]' : 'text-white'}`} title={value}>{value}</div>
 
         {change && (
           <span
-            className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+            className={`text-[11px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
               isPositive
                 ? isLight
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200'

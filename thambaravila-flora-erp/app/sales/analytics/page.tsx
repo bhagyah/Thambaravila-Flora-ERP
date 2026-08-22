@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import BarChartWidget from '@/app/components/charts/BarChartWidget';
 import DonutGaugeChart from '@/app/components/charts/DonutGaugeChart';
 import MetricSparkCard from '@/app/components/charts/MetricSparkCard';
+import { formatLKR } from '@/lib/utils/formatters';
 
 export default function SalesAnalyticsPage() {
   const { data: session } = useSession();
@@ -142,7 +143,7 @@ export default function SalesAnalyticsPage() {
           />
           <MetricSparkCard
             label="Total Contract Value"
-            value={`LKR ${kpis.totalContractValue.toLocaleString()}`}
+            value={formatLKR(kpis.totalContractValue)}
             change="+18.9%"
             isPositive={true}
             icon="💼"

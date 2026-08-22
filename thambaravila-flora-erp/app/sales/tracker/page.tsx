@@ -184,45 +184,143 @@ export default function SalesTrackerPage() {
         </div>
 
         {/* 6 KPI Cards matching Sheet 1 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4.5 shadow-sm">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Weddings</div>
-            <div className="text-2xl font-black text-slate-100 mt-1.5">{totalWeddings}</div>
-            <div className="text-[11px] text-emerald-400 mt-1 font-medium">Next 30-day pipeline</div>
-          </div>
-
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4.5 shadow-sm">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Package Value</div>
-            <div className="text-2xl font-black text-cyan-400 mt-1.5">{formatLKR(totalPackageValue)}</div>
-            <div className="text-[11px] text-slate-500 mt-1">Contract value</div>
-          </div>
-
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4.5 shadow-sm">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Advance Received</div>
-            <div className="text-2xl font-black text-emerald-400 mt-1.5">{formatLKR(totalAdvanceReceived)}</div>
-            <div className="text-[11px] text-emerald-500/80 mt-1">Deposits collected</div>
-          </div>
-
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4.5 shadow-sm">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Balance Pending</div>
-            <div className="text-2xl font-black text-amber-400 mt-1.5">{formatLKR(totalBalancePending)}</div>
-            <div className="text-[11px] text-amber-500/80 mt-1">To collect before event</div>
-          </div>
-
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4.5 shadow-sm">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Pending / Overdue</div>
-            <div className={`text-2xl font-black mt-1.5 ${pendingOverdueCount > 0 ? 'text-rose-400' : 'text-slate-100'}`}>
-              {pendingOverdueCount}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5 sm:gap-4">
+          {/* Card 1: Total Weddings */}
+          <div className="bg-slate-900/90 border border-slate-800/90 hover:border-slate-700/80 rounded-2xl p-4 sm:p-4.5 shadow-lg backdrop-blur-xl transition-all duration-200 flex flex-col justify-between min-w-0 group">
+            <div className="flex items-center justify-between gap-2 min-w-0">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
+                Total Weddings
+              </span>
+              <span className="text-sm shrink-0 p-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                💍
+              </span>
             </div>
-            <div className="text-[11px] text-slate-500 mt-1">Requires follow-up</div>
+            <div className="mt-2 min-w-0">
+              <div className="text-xl sm:text-2xl font-black text-slate-100 tracking-tight truncate" title={String(totalWeddings)}>
+                {totalWeddings}
+              </div>
+              <div className="text-[11px] text-emerald-400 mt-1 font-medium truncate flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                <span className="truncate">Next 30-day pipeline</span>
+              </div>
+            </div>
           </div>
 
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4.5 shadow-sm">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Job Sheets Missing</div>
-            <div className={`text-2xl font-black mt-1.5 ${jobSheetsNotCompleted > 0 ? 'text-amber-400' : 'text-slate-100'}`}>
-              {jobSheetsNotCompleted}
+          {/* Card 2: Total Package Value */}
+          <div className="bg-slate-900/90 border border-slate-800/90 hover:border-slate-700/80 rounded-2xl p-4 sm:p-4.5 shadow-lg backdrop-blur-xl transition-all duration-200 flex flex-col justify-between min-w-0 group">
+            <div className="flex items-center justify-between gap-2 min-w-0">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
+                Total Package Value
+              </span>
+              <span className="text-sm shrink-0 p-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                💼
+              </span>
             </div>
-            <div className="text-[11px] text-slate-500 mt-1">Production pending</div>
+            <div className="mt-2 min-w-0">
+              <div className="text-lg sm:text-xl xl:text-lg 2xl:text-xl font-black text-cyan-400 tracking-tight truncate" title={formatLKR(totalPackageValue)}>
+                {formatLKR(totalPackageValue)}
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1 font-medium truncate flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></span>
+                <span className="truncate">Contract value</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Advance Received */}
+          <div className="bg-slate-900/90 border border-slate-800/90 hover:border-slate-700/80 rounded-2xl p-4 sm:p-4.5 shadow-lg backdrop-blur-xl transition-all duration-200 flex flex-col justify-between min-w-0 group">
+            <div className="flex items-center justify-between gap-2 min-w-0">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
+                Advance Received
+              </span>
+              <span className="text-sm shrink-0 p-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                💰
+              </span>
+            </div>
+            <div className="mt-2 min-w-0">
+              <div className="text-lg sm:text-xl xl:text-lg 2xl:text-xl font-black text-emerald-400 tracking-tight truncate" title={formatLKR(totalAdvanceReceived)}>
+                {formatLKR(totalAdvanceReceived)}
+              </div>
+              <div className="text-[11px] text-emerald-400/90 mt-1 font-medium truncate flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                <span className="truncate">Deposits collected</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 4: Balance Pending */}
+          <div className="bg-slate-900/90 border border-slate-800/90 hover:border-slate-700/80 rounded-2xl p-4 sm:p-4.5 shadow-lg backdrop-blur-xl transition-all duration-200 flex flex-col justify-between min-w-0 group">
+            <div className="flex items-center justify-between gap-2 min-w-0">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
+                Balance Pending
+              </span>
+              <span className="text-sm shrink-0 p-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                ⏳
+              </span>
+            </div>
+            <div className="mt-2 min-w-0">
+              <div className="text-lg sm:text-xl xl:text-lg 2xl:text-xl font-black text-amber-400 tracking-tight truncate" title={formatLKR(totalBalancePending)}>
+                {formatLKR(totalBalancePending)}
+              </div>
+              <div className="text-[11px] text-amber-400/90 mt-1 font-medium truncate flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+                <span className="truncate">To collect before event</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 5: Pending / Overdue */}
+          <div className="bg-slate-900/90 border border-slate-800/90 hover:border-slate-700/80 rounded-2xl p-4 sm:p-4.5 shadow-lg backdrop-blur-xl transition-all duration-200 flex flex-col justify-between min-w-0 group">
+            <div className="flex items-center justify-between gap-2 min-w-0">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
+                Pending / Overdue
+              </span>
+              <span className={`text-sm shrink-0 p-1 rounded-lg border ${
+                pendingOverdueCount > 0
+                  ? 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+                  : 'bg-slate-800/60 border-slate-700/50 text-slate-400'
+              }`}>
+                ⚠️
+              </span>
+            </div>
+            <div className="mt-2 min-w-0">
+              <div className={`text-xl sm:text-2xl font-black tracking-tight truncate ${
+                pendingOverdueCount > 0 ? 'text-rose-400' : 'text-slate-100'
+              }`} title={String(pendingOverdueCount)}>
+                {pendingOverdueCount}
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1 font-medium truncate flex items-center gap-1.5">
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${pendingOverdueCount > 0 ? 'bg-rose-400' : 'bg-slate-500'}`}></span>
+                <span className="truncate">Requires follow-up</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 6: Job Sheets Missing */}
+          <div className="bg-slate-900/90 border border-slate-800/90 hover:border-slate-700/80 rounded-2xl p-4 sm:p-4.5 shadow-lg backdrop-blur-xl transition-all duration-200 flex flex-col justify-between min-w-0 group">
+            <div className="flex items-center justify-between gap-2 min-w-0">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
+                Job Sheets Missing
+              </span>
+              <span className={`text-sm shrink-0 p-1 rounded-lg border ${
+                jobSheetsNotCompleted > 0
+                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                  : 'bg-slate-800/60 border-slate-700/50 text-slate-400'
+              }`}>
+                📋
+              </span>
+            </div>
+            <div className="mt-2 min-w-0">
+              <div className={`text-xl sm:text-2xl font-black tracking-tight truncate ${
+                jobSheetsNotCompleted > 0 ? 'text-amber-400' : 'text-slate-100'
+              }`} title={String(jobSheetsNotCompleted)}>
+                {jobSheetsNotCompleted}
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1 font-medium truncate flex items-center gap-1.5">
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${jobSheetsNotCompleted > 0 ? 'bg-amber-400' : 'bg-slate-500'}`}></span>
+                <span className="truncate">Production pending</span>
+              </div>
+            </div>
           </div>
         </div>
 
